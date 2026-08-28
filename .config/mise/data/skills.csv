@@ -1,5 +1,6 @@
 category,repo,skill
 coding,https://github.com/jr2804/prompts,python-ultimate
+coding,https://codeberg.org/jr2804/clean-sort,
 coding,https://github.com/alinaqi/claude-bootstrap,code-deduplication
 coding,https://github.com/s2005/uv-skill,
 coding,https://github.com/shadcn/improve,
@@ -7,7 +8,6 @@ docs,plannotator/effective-html,
 docs,https://github.com/nicobailon/visual-explainer,
 docs,https://github.com/hardikpandya/stop-slop,
 docs,https://github.com/oil-oil/beautify-github-readme,
-rust,leonardomso/rust-skills,None
-rust,actionbook/rust-skills,None
+rust,https://codeberg.org/jr2804/copier-uv-plus.git,rust-skills
 rust,https://codeberg.org/jr2804/copier-uv-plus.git,rust-pyo3-bindings
 rust,https://codeberg.org/jr2804/copier-uv-plus.git,rust-dsp-stack

@@ -16,6 +16,7 @@ bun = "latest"
 ripgrep = "latest"
 "github:peteretelej/tree" = { version = "latest", rename_exe = "tree-cli" }
 "pipx:liteparse" = "latest"
+rust = "latest"
 
 [settings.npm]
 package_manager = "bun"

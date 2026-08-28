@@ -1,0 +1,23 @@
+[package]
+name = "g191_filter_core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Jan.Reimes <jan.reimes@head-acoustics.com>"]
+description = "Rust core for ITU-T G.191 FIR/IIR filters"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+ndarray = "0.15"
+hound = "3.5"
+pyo3 = { version = "0.22", features = ["extension-module"] }
+numpy = "0.22"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+incremental = false
+panic = "abort"

@@ -6,13 +6,8 @@ from importlib.metadata import version
 
 import typer
 
-# Version management
-def _get_version() -> str:
-    """Get application version from package metadata."""
-    try:
-        return version("g191_filter")
-    except Exception:
-        return "0.0.0"  # Fallback for development mode
+# Import commands to register them with app
+from g191_filter.cli import commands  # noqa: E402, F401
 
 app = typer.Typer(
     name="g191_filter",
@@ -20,6 +15,7 @@ app = typer.Typer(
     add_completion=True,
     no_args_is_help=True,
 )
+
 
 @app.callback(invoke_without_command=True)
 def _callback(
@@ -37,10 +33,15 @@ def _callback(
         raise typer.Exit()
 
 
+# Version management
+def _get_version() -> str:
+    """Get application version from package metadata."""
+    try:
+        return version("g191_filter")
+    except Exception:
+        return "0.0.0"  # Fallback for development mode
+
+
 def main() -> None:
     """Entry point for the CLI application."""
     app()
-
-
-# Import commands to register them with app
-from g191_filter.cli import commands  # noqa: E402, F401

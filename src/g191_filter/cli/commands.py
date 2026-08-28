@@ -12,13 +12,16 @@ APP_NAME_UPPERCASE = "G191_FILTER"
 
 # Default command (runs when no command provided)
 
+
 @app.command()
 def default() -> None:
     """Default command showing welcome message."""
-    typer.echo(f"Welcome to ITU-T G.191 FIR/IIR signal filters!")
+    typer.echo("Welcome to ITU-T G.191 FIR/IIR signal filters!")
     typer.echo("Use --help to see available commands.")
 
+
 # Greet command
+
 
 @app.command()
 def greet(
@@ -41,7 +44,9 @@ def greet(
         typer.echo(f"Output file: {output_file}")
     typer.echo(f"Cache: {'enabled' if cache else 'disabled'}")
 
+
 # Add command
+
 
 @app.command()
 def add(

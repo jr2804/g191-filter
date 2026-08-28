@@ -51,3 +51,9 @@ mcporter.json
 
 # custom/local/misc. files
 mise.local.toml
+
+# compile artifacts
+src/g191_filter/target/
+nul
+*.pdb
+*.exe

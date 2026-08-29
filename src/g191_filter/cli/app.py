@@ -6,9 +6,6 @@ from importlib.metadata import version
 
 import typer
 
-# Import commands to register them with app (after app exists)
-from g191_filter.cli import commands  # noqa: E402, F401
-
 app = typer.Typer(
     name="g191_filter",
     help="IIR/FIR filters according to Recommendation ITU-T G.191 (Software Tool Library). Provided at arbitrary sampling rates and in many formats",
@@ -40,6 +37,10 @@ def _get_version() -> str:
         return version("g191_filter")
     except Exception:
         return "0.0.0"  # Fallback for development mode
+
+
+# Import commands to register them with app (after app exists)
+from g191_filter.cli import commands  # noqa: E402, F401
 
 
 def main() -> None:

@@ -46,8 +46,10 @@ jobs:
         fi
         year="$(date -u +%Y)"
         # Strip leading zero to match PEP 440 wheel naming (YYYY.M.N, not YYYY.0M.N).
-        # date +%-m returns unpadded month; portable across coreutils and BSD date.
-        month="$(date -u +%-m)"
+        # bash removes any leading zeros via arithmetic expansion; safe on all bash versions.
+        month_raw="$(date -u +%m)"
+        # bash parameter expansion strips a single leading zero (e.g. 08 → 8, 10 → 10)
+        month="${month_raw#0}"
         git fetch --tags --force
         prefix="${year}.${month}."
         highest="$(git tag --list "${prefix}*" | sed -n "s/^${year}\\.${month}\\.\\([0-9][0-9]*\\)$/\\1/p" | sort -n | tail -n 1)"

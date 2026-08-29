@@ -45,9 +45,9 @@ jobs:
           exit 0
         fi
         year="$(date -u +%Y)"
-        # Strip leading zero to match PEP 440 wheel naming (YYYY.M.N, not YYYY.0M.N)
-        month_raw="$(date -u +%m)"
-        month="$((10#$month_raw))"
+        # Strip leading zero to match PEP 440 wheel naming (YYYY.M.N, not YYYY.0M.N).
+        # date +%-m returns unpadded month; portable across coreutils and BSD date.
+        month="$(date -u +%-m)"
         git fetch --tags --force
         prefix="${year}.${month}."
         highest="$(git tag --list "${prefix}*" | sed -n "s/^${year}\\.${month}\\.\\([0-9][0-9]*\\)$/\\1/p" | sort -n | tail -n 1)"
@@ -55,7 +55,7 @@ jobs:
         next="$((counter + 1))"
         version="${year}.${month}.${next}"
         while git rev-parse -q --verify "refs/tags/${version}" >/dev/null; do
-          next="$((next + 1)"
+          next="$((next + 1))"
           version="${year}.${month}.${next}"
         done
         echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -65,6 +65,8 @@ jobs:
       run: |
         set -euo pipefail
         version="${{ steps.version.outputs.version }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git tag -a "$version" -m "Release $version"
         git push origin "$version"
     # maturin reads Cargo version directly; sync it to the calver

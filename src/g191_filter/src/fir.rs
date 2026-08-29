@@ -37,6 +37,23 @@ impl FirFilter {
         self.k0 = 0;
     }
 
+    /// Serialize filter state into a flat byte vector (for Python interop)
+    pub fn get_state(&self) -> Vec<f64> {
+        let mut state = self.t.clone();
+        state.push(self.k0 as f64);
+        state
+    }
+
+    /// Restore filter state from a flat vector
+    pub fn set_state(&mut self, state: &[f64]) {
+        let lenh0 = self.h0.len();
+        let expected = lenh0 - 1 + 1; // t + k0
+        if state.len() >= expected {
+            self.t.copy_from_slice(&state[..lenh0 - 1]);
+            self.k0 = state[lenh0 - 1] as i64;
+        }
+    }
+
     /// Process a block of samples; returns output samples
     pub fn process_block(&mut self, x: &[f64]) -> Vec<f64> {
         if self.hswitch == 'U' {
@@ -49,6 +66,9 @@ impl FirFilter {
     /// STL fir_downsampling_kernel
     fn downsampling_kernel(&mut self, x: &[f64]) -> Vec<f64> {
         let lenx = x.len();
+        if lenx == 0 {
+            return Vec::new();
+        }
         let lenh0 = self.h0.len();
         let downfac = self.dwn_up as usize;
         let mut y = Vec::new();
@@ -95,18 +115,19 @@ impl FirFilter {
         }
 
         // Last Step: copy end of x-array into T-array (update delay line)
+        // C reference stores delay line chronologically (oldest first).
         if lenx >= lenh0 - 1 {
             for kappa in 0..(lenh0 - 1) {
-                self.t[kappa] = x[lenx - 1 - kappa];
+                self.t[kappa] = x[lenx + 1 - lenh0 + kappa];
             }
         } else {
-            // Shift existing delay line and append new samples
-            let shift = lenh0 - 1 - lenx;
-            for kappa in 0..shift {
+            // Left-Shift of T-array
+            for kappa in 0..(lenh0 - 1 - lenx) {
                 self.t[kappa] = self.t[kappa + lenx];
             }
-            for kappa in 0..lenx {
-                self.t[shift + kappa] = x[lenx - 1 - kappa];
+            // Copy complete x-array -> T-array
+            for kappa in (lenh0 - 1 - lenx)..(lenh0 - 1) {
+                self.t[kappa] = x[lenx - 1 + kappa - (lenh0 - 2)];
             }
         }
 
@@ -116,6 +137,9 @@ impl FirFilter {
     /// STL fir_upsampling_kernel
     fn upsampling_kernel(&mut self, x: &[f64]) -> Vec<f64> {
         let lenx = x.len();
+        if lenx == 0 {
+            return Vec::new();
+        }
         let lenh0 = self.h0.len();
         let iupfac = self.dwn_up as usize;
         let mut y = Vec::new();
@@ -151,17 +175,18 @@ impl FirFilter {
         }
 
         // Last Step: update delay line
-        if lenx >= lenh0 / iupfac {
+        // C reference stores delay line chronologically (oldest first).
+        if lenx >= lenh0 / iupfac - 1 {
             for kappa in 0..(lenh0 / iupfac) {
-                self.t[kappa] = x[lenx - 1 - kappa];
+                self.t[kappa] = x[lenx + 1 - lenh0 / iupfac + kappa];
             }
         } else {
-            let shift = lenh0 / iupfac - lenx;
+            let shift = lenh0 / iupfac - 1 - lenx;
             for kappa in 0..shift {
                 self.t[kappa] = self.t[kappa + lenx];
             }
-            for kappa in 0..lenx {
-                self.t[shift + kappa] = x[lenx - 1 - kappa];
+            for kappa in (lenh0 / iupfac - 1 - lenx)..(lenh0 / iupfac) {
+                self.t[kappa] = x[lenx - 1 + kappa - (lenh0 / iupfac - 2)];
             }
         }
 

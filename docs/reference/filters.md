@@ -7,6 +7,37 @@ title: Filter Catalog & Specifications
 This reference provides technical specifications, transfer function characteristics,
 and frequency response figures for all 20 standard ITU-T G.191 filters implemented in `g191-filter`.
 
+### Filter Families at a Glance
+
+```mermaid
+mindmap
+  root((G.191 Filter Catalog))
+    IRS Family
+      irs8khz
+      irs16khz
+      mod_irs16khz
+      mod_irs48khz
+    48 kHz Low-Pass Suite
+      lp1p5_48khz
+      lp35_48khz
+      lp7_48khz
+      lp10_48khz
+      lp12_48khz
+      lp14_48khz
+      lp20_48khz
+    Resampling and Rate Conversion
+      hq_down_2_to_1
+      hq_down_3_to_1
+      iir_down_3_to_1
+      iir_up_1_to_3
+      iir_casc_lp_3_to_1
+      iir_casc_lp_1_to_3
+    Telecom and Conditioning
+      flat_band_pass
+      g712_8khz
+      dir_dc_removal
+```
+
 ---
 
 ## 1. Intermediate Reference System (IRS) Family

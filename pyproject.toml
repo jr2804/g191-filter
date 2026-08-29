@@ -51,6 +51,15 @@ source = "uv-dynamic-versioning"
 
 [tool.uv-dynamic-versioning]
 fallback-version = "0.0.0"
+# CalVer YYYY.M.N: version comes exclusively from the release tag
+# pushed by .github/workflows/release.yml. uv-dynamic-versioning
+# matches the tag with the regex below; `latest-tag` selects the
+# most recent matching tag rather than commit-count schemes.
+vcs = "git"
+style = "pep440"
+latest-tag = true
+tag-dir = "tags"
+pattern = '^(?P<base>\d{4}\.\d{1,2}\.\d+)$' 
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

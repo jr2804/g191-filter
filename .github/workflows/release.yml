@@ -1,81 +1,65 @@
 name: release
-
 on:
-
   push:
     branches:
       - main
   workflow_dispatch:
-
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
-
 defaults:
   run:
     shell: bash
-
 jobs:
-
   release:
-
     if: ${{ github.ref == 'refs/heads/main' }}
-
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         fetch-tags: true
-
     - name: Setup Python
       uses: actions/setup-python@v6
       with:
         python-version: "3.13"
-
     - name: Setup uv
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
         cache-dependency-glob: pyproject.toml
-
-
+    # CalVer: YYYY.M.N (unpadded month/day-of-month) is the single
+    # source of truth. Tag format matches PEP 440 so the resulting
+    # wheel and sdist share a version string.
     - name: Compute next calendar version
       id: version
       run: |
         set -euo pipefail
-
-        existing_head_tag="$(git tag --points-at HEAD | grep -E '^[0-9]{4}\.[0-9]{2}\.[0-9]+$' | head -n 1 || true)"
+        existing_head_tag="$(git tag --points-at HEAD | grep -E '^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$' | head -n 1 || true)"
         if [ -n "$existing_head_tag" ]; then
           echo "version=$existing_head_tag" >> "$GITHUB_OUTPUT"
           echo "needs_tag=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-
         year="$(date -u +%Y)"
-        month="$(date -u +%m)"
-
+        # Strip leading zero to match PEP 440 wheel naming (YYYY.M.N, not YYYY.0M.N)
+        month_raw="$(date -u +%m)"
+        month="$((10#$month_raw))"
         git fetch --tags --force
-
         prefix="${year}.${month}."
         highest="$(git tag --list "${prefix}*" | sed -n "s/^${year}\\.${month}\\.\\([0-9][0-9]*\\)$/\\1/p" | sort -n | tail -n 1)"
         counter="${highest:-0}"
         next="$((counter + 1))"
         version="${year}.${month}.${next}"
-
         while git rev-parse -q --verify "refs/tags/${version}" >/dev/null; do
-          next="$((next + 1))"
+          next="$((next + 1)"
           version="${year}.${month}.${next}"
         done
-
         echo "version=$version" >> "$GITHUB_OUTPUT"
         echo "needs_tag=true" >> "$GITHUB_OUTPUT"
-
     - name: Create and push tag
       if: steps.version.outputs.needs_tag == 'true'
       run: |
@@ -83,17 +67,22 @@ jobs:
         version="${{ steps.version.outputs.version }}"
         git tag -a "$version" -m "Release $version"
         git push origin "$version"
-
-
-    - name: Build package
-      run: uv build
-
+    # maturin reads Cargo version directly; sync it to the calver
+    # so the built wheel matches the sdist.
+    - name: Sync Cargo version to ${{ steps.version.outputs.version }}
+      run: |
+        set -euo pipefail
+        sed -i 's/^version = "0.0.0"$/version = "${{ steps.version.outputs.version }}"/' src/g191_filter/Cargo.toml
+    - name: Build sdist
+      run: uv build --sdist
+    - name: Build native wheel
+      run: uvx maturin build --release
     - name: Create release
       uses: softprops/action-gh-release@v2
       with:
-
         tag_name: ${{ steps.version.outputs.version }}
         name: ${{ steps.version.outputs.version }}
-
-        files: dist/*
+        files: |
+          dist/*.tar.gz
+          src/g191_filter/target/wheels/*.whl
         generate_release_notes: true

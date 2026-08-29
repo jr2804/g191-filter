@@ -41,7 +41,9 @@ jobs:
           install: true
 
       - name: Install dependencies
-        run: mise dev
+        run: |
+          mise dev
+          uv run maturin develop --release
 
       - name: Generate filter figures
         run: uv run python scripts/gen_filter_figures.py

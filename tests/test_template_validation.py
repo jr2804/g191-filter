@@ -83,12 +83,18 @@ def test_pytest_configuration() -> None:
 def test_mise_tasks_configured() -> None:
     """Test that mise tasks are configured."""
     mise_file = Path(".config/mise/config.toml")
+    tasks_file = Path(".config/mise/conf.d/tasks.toml")
     if not mise_file.exists():
         msg = ".config/mise/config.toml should exist"
         raise AssertionError(msg)
 
-    # Verify that at least the dev task is present (always included)
-    content = mise_file.read_text(encoding="utf-8")
+    # Check config.toml or conf.d/tasks.toml for [tasks.dev]
+    content = ""
+    if mise_file.exists():
+        content += mise_file.read_text(encoding="utf-8")
+    if tasks_file.exists():
+        content += tasks_file.read_text(encoding="utf-8")
+
     if "[tasks.dev]" not in content:
-        msg = "Expected [tasks.dev] in config.toml"
+        msg = "Expected [tasks.dev] in mise configuration"
         raise AssertionError(msg)

@@ -35,8 +35,11 @@ g191-filter = "g191_filter.cli.app:main"
 packages = ["src/g191_filter"]
 
 [build-system]
-requires = ["hatchling", "uv-dynamic-versioning"]
+requires = ["hatchling", "uv-dynamic-versioning", "maturin>=0.20"]
 build-backend = "hatchling.build"
+
+[tool.maturin]
+manifest-path = "src/g191_filter/Cargo.toml"
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"

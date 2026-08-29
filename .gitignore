@@ -56,4 +56,5 @@ mise.local.toml
 src/g191_filter/target/
 nul
 *.pdb
+*.log
 *.exe

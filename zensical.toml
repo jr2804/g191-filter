@@ -129,6 +129,10 @@ name = "python"
 class = "python"
 validator = "markdown_exec.validator"
 format = "markdown_exec.formatter"
+[[project.markdown_extensions.pymdownx.superfences.custom_fences]]
+name = "mermaid"
+class = "mermaid"
+format = "mermaid2.fence_mermaid"
 [project.markdown_extensions.pymdownx.tabbed]
 alternate_style = true
 [project.markdown_extensions.pymdownx.tasklist]
@@ -163,3 +167,6 @@ show_symbol_type_toc = true
 signature_crossrefs = true
 summary = true
 unwrap_annotated = true
+
+[project.plugins.mermaid2]
+version = "11.4.1"

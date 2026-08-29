@@ -14,6 +14,273 @@ pub use fir::FirFilter;
 pub use iir::{CascadeIirFilter, DirectIirFilter, IirFilter};
 pub use resample::Resampler;
 
+/// Internal state of a filter, used for blockwise streaming processing.
+///
+/// Serializes to a flat `Vec<f64>` so it can cross the Rust↔Python boundary
+/// cheaply via the `pyo3` array protocol.
+#[derive(Debug, Clone)]
+pub enum FilterState {
+    Fir { t: Vec<f64>, k0: i64 },
+    IirParallel { t: Vec<[f64; 2]>, k0: i64 },
+    IirCascade { t: Vec<[f64; 4]>, k0: i64 },
+    IirDirect { t: Vec<[f64; 2]>, k0: i64 },
+}
+
+impl FilterState {
+    /// Flat representation for Python interop
+    pub fn to_vec(&self) -> Vec<f64> {
+        match self {
+            Self::Fir { t, k0 } => {
+                let mut v = t.clone();
+                v.push(*k0 as f64);
+                v
+            }
+            Self::IirParallel { t, k0 } => {
+                let mut v = Vec::with_capacity(t.len() * 2 + 1);
+                for row in t {
+                    v.push(row[0]);
+                    v.push(row[1]);
+                }
+                v.push(*k0 as f64);
+                v
+            }
+            Self::IirCascade { t, k0 } => {
+                let mut v = Vec::with_capacity(t.len() * 4 + 1);
+                for row in t {
+                    v.extend_from_slice(row);
+                }
+                v.push(*k0 as f64);
+                v
+            }
+            Self::IirDirect { t, k0 } => {
+                let mut v = Vec::with_capacity(t.len() * 2 + 1);
+                for row in t {
+                    v.push(row[0]);
+                    v.push(row[1]);
+                }
+                v.push(*k0 as f64);
+                v
+            }
+        }
+    }
+
+    /// Reconstruct from a flat representation
+    pub fn from_vec(state: &[f64], filter_kind: &str, block_count: usize) -> Option<Self> {
+        match filter_kind {
+            "fir" => {
+                if state.len() != block_count + 1 {
+                    return None;
+                }
+                let t = state[..block_count].to_vec();
+                let k0 = state[block_count] as i64;
+                Some(Self::Fir { t, k0 })
+            }
+            "iir_parallel" => {
+                let expected = block_count * 2 + 1;
+                if state.len() != expected {
+                    return None;
+                }
+                let mut t = vec![[0.0; 2]; block_count];
+                for n in 0..block_count {
+                    t[n][0] = state[n * 2];
+                    t[n][1] = state[n * 2 + 1];
+                }
+                let k0 = state[block_count * 2] as i64;
+                Some(Self::IirParallel { t, k0 })
+            }
+            "iir_cascade" => {
+                let expected = block_count * 4 + 1;
+                if state.len() != expected {
+                    return None;
+                }
+                let mut t = vec![[0.0; 4]; block_count];
+                for n in 0..block_count {
+                    for k in 0..4 {
+                        t[n][k] = state[n * 4 + k];
+                    }
+                }
+                let k0 = state[block_count * 4] as i64;
+                Some(Self::IirCascade { t, k0 })
+            }
+            "iir_direct" => {
+                let expected = block_count * 2 + 1;
+                if state.len() != expected {
+                    return None;
+                }
+                let mut t = vec![[0.0; 2]; block_count];
+                for n in 0..block_count {
+                    t[n][0] = state[n * 2];
+                    t[n][1] = state[n * 2 + 1];
+                }
+                let k0 = state[block_count * 2] as i64;
+                Some(Self::IirDirect { t, k0 })
+            }
+            _ => None,
+        }
+    }
+}
+
+/// Blockwise filter wrapper that retains its state across calls.
+///
+/// One-shot filtering is implemented on top of this; the one-shot path simply
+/// creates a `BlockwiseFilter`, processes the entire input in chunks of
+/// `block_size`, and concatenates the output.
+pub struct BlockwiseFilter {
+    /// Concrete filter instance (owned)
+    inner: FilterInner,
+    /// Cached filter id for re-creation
+    filter_id: FilterId,
+    /// Block size used for chunked processing
+    block_size: usize,
+}
+
+enum FilterInner {
+    Fir(FirFilter),
+    IirParallel(IirFilter),
+    IirCascade(CascadeIirFilter),
+    IirDirect(DirectIirFilter),
+}
+
+impl BlockwiseFilter {
+    /// Create a fresh blockwise filter for the given filter id and block size
+    pub fn new(filter_id: FilterId, block_size: usize) -> Option<Self> {
+        let config = get_filter_config(filter_id)?;
+        let inner = match &config.coefficients {
+            Coefficients::Fir { h0 } => {
+                let f = FirFilter::new(h0, config.gain, config.ratio_den, 'D');
+                FilterInner::Fir(f)
+            }
+            Coefficients::IirParallel { gain, direct, b, c } => {
+                let f = IirFilter::new(*gain, *direct, b, c, config.ratio_den);
+                FilterInner::IirParallel(f)
+            }
+            Coefficients::IirCascade { gain, b, a } => {
+                let f = CascadeIirFilter::new(*gain, b, a, config.ratio_den);
+                FilterInner::IirCascade(f)
+            }
+            Coefficients::IirDirect { gain, b, a } => {
+                let f = DirectIirFilter::new(*gain, b, a, config.ratio_den);
+                FilterInner::IirDirect(f)
+            }
+        };
+        Some(Self {
+            inner,
+            filter_id,
+            block_size: block_size.max(1),
+        })
+    }
+
+    /// Process a single chunk of input, appending to `output`.
+    /// This is the streaming entry point: callers accumulate `output` across
+    /// chunks and pass the state in via `set_state` between calls.
+    pub fn process_chunk(&mut self, x: &[f64], output: &mut Vec<f64>) {
+        let bs = self.block_size;
+        if x.len() <= bs {
+            let y = self.process_block(x);
+            output.extend_from_slice(&y);
+        } else {
+            for chunk in x.chunks(bs) {
+                let y = self.process_block(chunk);
+                output.extend_from_slice(&y);
+            }
+        }
+    }
+
+    /// Process the entire input at once (uses chunked processing internally)
+    pub fn process_all(&mut self, x: &[f64]) -> Vec<f64> {
+        let mut out = Vec::new();
+        self.process_chunk(x, &mut out);
+        out
+    }
+
+    fn process_block(&mut self, x: &[f64]) -> Vec<f64> {
+        match &mut self.inner {
+            FilterInner::Fir(f) => f.process_block(x),
+            FilterInner::IirParallel(f) => f.process_block(x),
+            FilterInner::IirCascade(f) => f.process_block(x),
+            FilterInner::IirDirect(f) => f.process_block(x),
+        }
+    }
+
+    /// Snapshot the current state
+    pub fn get_state(&self) -> FilterState {
+        match &self.inner {
+            FilterInner::Fir(f) => {
+                let v = f.get_state();
+                let k0 = *v.last().unwrap_or(&0.0) as i64;
+                let mut t = v;
+                t.pop();
+                FilterState::Fir { t, k0 }
+            }
+            FilterInner::IirParallel(f) => {
+                let v = f.get_state();
+                let nblocks = (v.len() - 1) / 2;
+                let mut t = vec![[0.0; 2]; nblocks];
+                for n in 0..nblocks {
+                    t[n][0] = v[n * 2];
+                    t[n][1] = v[n * 2 + 1];
+                }
+                let k0 = v[v.len() - 1] as i64;
+                FilterState::IirParallel { t, k0 }
+            }
+            FilterInner::IirCascade(f) => {
+                let v = f.get_state();
+                let nblocks = (v.len() - 1) / 4;
+                let mut t = vec![[0.0; 4]; nblocks];
+                for n in 0..nblocks {
+                    for k in 0..4 {
+                        t[n][k] = v[n * 4 + k];
+                    }
+                }
+                let k0 = v[v.len() - 1] as i64;
+                FilterState::IirCascade { t, k0 }
+            }
+            FilterInner::IirDirect(f) => {
+                let v = f.get_state();
+                let nblocks = (v.len() - 1) / 2;
+                let mut t = vec![[0.0; 2]; nblocks];
+                for n in 0..nblocks {
+                    t[n][0] = v[n * 2];
+                    t[n][1] = v[n * 2 + 1];
+                }
+                let k0 = v[v.len() - 1] as i64;
+                FilterState::IirDirect { t, k0 }
+            }
+        }
+    }
+
+    /// Restore state from a snapshot
+    pub fn set_state(&mut self, state: FilterState) {
+        let flat = state.to_vec();
+        match &mut self.inner {
+            FilterInner::Fir(f) => f.set_state(&flat),
+            FilterInner::IirParallel(f) => f.set_state(&flat),
+            FilterInner::IirCascade(f) => f.set_state(&flat),
+            FilterInner::IirDirect(f) => f.set_state(&flat),
+        }
+    }
+
+    /// Reset the filter to zero state
+    pub fn reset(&mut self) {
+        match &mut self.inner {
+            FilterInner::Fir(f) => f.reset(),
+            FilterInner::IirParallel(f) => f.reset(),
+            FilterInner::IirCascade(f) => f.reset(),
+            FilterInner::IirDirect(f) => f.reset(),
+        }
+    }
+
+    /// Identifier of the underlying filter
+    pub fn filter_id(&self) -> FilterId {
+        self.filter_id
+    }
+
+    /// Block size used for chunked processing
+    pub fn block_size(&self) -> usize {
+        self.block_size
+    }
+}
+
 use coeffs_generated::{fir as fir_coeffs, iir as iir_coeffs};
 
 /// Configuration of a filter

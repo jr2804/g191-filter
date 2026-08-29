@@ -178,19 +178,18 @@ def parse_f24_row(text: str) -> list[float]:
 
 
 def parse_float(text: str) -> list[float]:
-    """Parse floating-point coefficients in scientific or decimal notation."""
+    """Parse floating-point coefficients in scientific, decimal, or (F)-prefixed notation."""
     values = []
-    for elem in text.split(","):
+    # Normalize (F) prefix and scientific notation
+    normalized = re.sub(r"\s*\(F\)\s*", "", text)
+    for elem in normalized.split(","):
         elem = elem.strip()
         if not elem:
             continue
-        # Match scientific notation (e.g., 1.2e-3) OR decimal numbers (e.g., 1.0, 0.)
         m = re.match(r"^(-?\d+\.?\d*(?:e[+-]?\d+)?)$", elem, re.IGNORECASE)
         if m:
             values.append(float(m.group(1)))
         else:
-            # If element doesn't match either pattern, try to parse it directly
-            # This handles cases like "1." (integer) or other valid numbers
             try:
                 values.append(float(elem))
             except ValueError:

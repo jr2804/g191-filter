@@ -43,6 +43,30 @@ impl IirFilter {
         self.k0 = 0;
     }
 
+    /// Serialize filter state into a flat byte vector
+    pub fn get_state(&self) -> Vec<f64> {
+        let mut state = Vec::with_capacity(self.t.len() * 2 + 1);
+        for row in &self.t {
+            state.push(row[0]);
+            state.push(row[1]);
+        }
+        state.push(self.k0 as f64);
+        state
+    }
+
+    /// Restore filter state from a flat vector
+    pub fn set_state(&mut self, state: &[f64]) {
+        let nblocks = self.t.len();
+        let expected = nblocks * 2 + 1; // t[n][2] + k0
+        if state.len() >= expected {
+            for n in 0..nblocks {
+                self.t[n][0] = state[n * 2];
+                self.t[n][1] = state[n * 2 + 1];
+            }
+            self.k0 = state[nblocks * 2] as i64;
+        }
+    }
+
     /// Process a block of samples (STL scd_parallel_form_iir_down_kernel)
     pub fn process_block(&mut self, x: &[f64]) -> Vec<f64> {
         let nblocks = self.b.len();
@@ -108,6 +132,31 @@ impl CascadeIirFilter {
     pub fn reset(&mut self) {
         self.t.iter_mut().for_each(|row| *row = [0.0; 4]);
         self.k0 = 0;
+    }
+
+    /// Serialize filter state into a flat byte vector
+    pub fn get_state(&self) -> Vec<f64> {
+        let mut state = Vec::with_capacity(self.t.len() * 4 + 1);
+        for row in &self.t {
+            state.extend_from_slice(row);
+        }
+        state.push(self.k0 as f64);
+        state
+    }
+
+    /// Restore filter state from a flat vector
+    pub fn set_state(&mut self, state: &[f64]) {
+        let nblocks = self.t.len();
+        let expected = nblocks * 4 + 1; // t[n][4] + k0
+        if state.len() >= expected {
+            for n in 0..nblocks {
+                self.t[n][0] = state[n * 4];
+                self.t[n][1] = state[n * 4 + 1];
+                self.t[n][2] = state[n * 4 + 2];
+                self.t[n][3] = state[n * 4 + 3];
+            }
+            self.k0 = state[nblocks * 4] as i64;
+        }
     }
 
     /// Process a block of samples (STL cascade_form_iir_down_kernel)
@@ -177,6 +226,30 @@ impl DirectIirFilter {
     pub fn reset(&mut self) {
         self.t.iter_mut().for_each(|row| *row = [0.0; 2]);
         self.k0 = 0;
+    }
+
+    /// Serialize filter state into a flat byte vector
+    pub fn get_state(&self) -> Vec<f64> {
+        let mut state = Vec::with_capacity(self.t.len() * 2 + 1);
+        for row in &self.t {
+            state.push(row[0]);
+            state.push(row[1]);
+        }
+        state.push(self.k0 as f64);
+        state
+    }
+
+    /// Restore filter state from a flat vector
+    pub fn set_state(&mut self, state: &[f64]) {
+        let nblocks = self.t.len();
+        let expected = nblocks * 2 + 1; // t[n][2] + k0
+        if state.len() >= expected {
+            for n in 0..nblocks {
+                self.t[n][0] = state[n * 2];
+                self.t[n][1] = state[n * 2 + 1];
+            }
+            self.k0 = state[nblocks * 2] as i64;
+        }
     }
 
     /// Process a block of samples (STL direct_form_iir_down_kernel)

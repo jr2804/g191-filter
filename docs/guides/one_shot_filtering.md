@@ -11,12 +11,24 @@ It is the ideal approach when the full signal fits comfortably in memory (e.g., 
 
 ```mermaid
 flowchart LR
-    A[Input Signal<br/>NumPy array or WAV] --> B[g191-filter Core<br/>Rust PyO3 Extension]
-    B --> C{Filter Type}
-    C -->|FIR| D[Direct / Polyphase Convolve]
-    C -->|IIR Cascade / Parallel| E[Bi-quad / Direct Form II]
-    D --> F[Filtered Output<br/>NumPy array / WAV]
+    A["Input Signal<br/>NumPy array or WAV"] --> B["g191-filter Core<br/>Rust PyO3 Extension"]
+    B --> C{"Filter Type"}
+    C -->|FIR| D["Direct / Polyphase Convolve"]
+    C -->|IIR Cascade / Parallel| E["Biquad / Direct Form II"]
+    D --> F["Filtered Output<br/>NumPy array / WAV"]
     E --> F
+
+    classDef input fill:#e0f2f1,stroke:#00897b,stroke-width:2px,color:#004d40;
+    classDef core fill:#ede7f6,stroke:#7e57c2,stroke-width:2px,color:#4527a0;
+    classDef decision fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100;
+    classDef process fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1;
+    classDef output fill:#e8f5e9,stroke:#43a047,stroke-width:2px,color:#1b5e20;
+
+    class A input;
+    class B core;
+    class C decision;
+    class D,E process;
+    class F output;
 ```
 
 ## Python API: `filter_array`

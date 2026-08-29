@@ -20,19 +20,27 @@ sequenceDiagram
     participant Engine as BlockwiseFilter (Rust)
     participant State as Internal Delay Line
 
-    Note over App,State: Block 1 Arrival
-    App->>Engine: process(chunk_1)
-    Engine->>State: Read prior state (zeros on init)
-    Engine->>Engine: Convolve / IIR filter
-    Engine->>State: Store boundary history (len - 1 samples)
-    Engine-->>App: Return filtered chunk_1
+    rect rgb(227, 242, 253)
+        Note over App,State: Block 1 Arrival
+        App->>Engine: process(chunk_1)
+        activate Engine
+        Engine->>State: Read prior state (zeros on init)
+        Engine->>Engine: Convolve / IIR filter
+        Engine->>State: Store boundary history (len - 1 samples)
+        Engine-->>App: Return filtered chunk_1
+        deactivate Engine
+    end
 
-    Note over App,State: Block 2 Arrival (Seamless Transition)
-    App->>Engine: process(chunk_2)
-    Engine->>State: Fetch stored boundary history
-    Engine->>Engine: Convolve seamlessly across boundary
-    Engine->>State: Update boundary history
-    Engine-->>App: Return filtered chunk_2
+    rect rgb(232, 245, 233)
+        Note over App,State: Block 2 Arrival (Seamless Transition)
+        App->>Engine: process(chunk_2)
+        activate Engine
+        Engine->>State: Fetch stored boundary history
+        Engine->>Engine: Convolve seamlessly across boundary
+        Engine->>State: Update boundary history
+        Engine-->>App: Return filtered chunk_2
+        deactivate Engine
+    end
 ```
 
 ## Python API: `BlockwiseFilter`

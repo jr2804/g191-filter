@@ -2,11 +2,11 @@
 title: Development & Contributing
 ---
 
-# Development Guide
+## Development Guide
 
 This guide covers setting up the development environment, building the native Rust core, running tests, linting, and building documentation.
 
-## Environment Setup
+### Environment Setup
 
 The project uses [`mise`](https://mise.jdx.dev/) for task orchestration and [`uv`](https://docs.astral.sh/uv/) for Python package management.
 The numerical filtering core is written in Rust and compiled via Maturin / PyO3.
@@ -20,7 +20,7 @@ cd g191-filter
 mise dev
 ```
 
-## Native Extension Build Workflow
+### Native Extension Build Workflow
 
 The Python interface binds to the Rust crate `_native` compiled via PyO3:
 
@@ -29,7 +29,7 @@ The Python interface binds to the Rust crate `_native` compiled via PyO3:
 uvx maturin develop --release
 ```
 
-## Running Tests
+### Running Tests
 
 Integration and unit tests verify filter coefficients, frequency responses, state consistency, and output equivalence against the ITU-T reference suite.
 
@@ -41,7 +41,7 @@ uv run pytest
 mise test
 ```
 
-## Code Quality & Formatting
+### Code Quality & Formatting
 
 ```bash
 mise lint       # Runs ruff, ty type-checker, and codespell
@@ -49,7 +49,7 @@ mise format     # Runs ruff format and isort
 mise all        # Combined test, lint, and format verification
 ```
 
-## CLI Development
+### CLI Development
 
 Run the Typer CLI in development mode:
 
@@ -61,7 +61,7 @@ uv run g191-filter --help
 uv run g191-filter filter --filter-id irs8khz --input-file input.wav --output-file output.wav
 ```
 
-## Documentation Workflow
+### Documentation Workflow
 
 Documentation is built with Zensical (MkDocs-compatible theme engine):
 
@@ -73,7 +73,7 @@ mise docs-serve    # preview at http://localhost:8000
 mise docs-build    # outputs to site/
 ```
 
-### Regenerating Filter Figures
+#### Regenerating Filter Figures
 
 Vector response figures embedded in the documentation are dynamically plotted directly from the filter core using the `xy` package:
 
@@ -81,7 +81,7 @@ Vector response figures embedded in the documentation are dynamically plotted di
 uv run python scripts/gen_filter_figures.py
 ```
 
-## CI/CD Pipeline
+### CI/CD Pipeline
 
 | Workflow | Trigger | Scope |
 | -------- | ------- | ----- |

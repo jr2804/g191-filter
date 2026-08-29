@@ -2,12 +2,12 @@
 title: One-Shot & Batch Filtering
 ---
 
-# One-Shot & Batch Filtering
+## One-Shot & Batch Filtering
 
 One-shot filtering processes an entire audio signal or buffer in a single function call.
 It is the ideal approach when the full signal fits comfortably in memory (e.g., offline dataset preprocessing or file conversions).
 
-## Processing Flow & Architecture
+### Processing Flow & Architecture
 
 ```mermaid
 flowchart LR
@@ -31,7 +31,7 @@ flowchart LR
     class F output;
 ```
 
-## Python API: `filter_array`
+### Python API: `filter_array`
 
 `filter_array` applies any G.191 filter directly to a 1D `numpy.ndarray` (`float64`):
 
@@ -51,7 +51,7 @@ filtered_signal = filter_array("mod_irs16khz", signal)
 print(f"Input shape: {signal.shape}, Output shape: {filtered_signal.shape}")
 ```
 
-### Parameter Reference
+#### Parameter Reference
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
@@ -61,7 +61,7 @@ print(f"Input shape: {signal.shape}, Output shape: {filtered_signal.shape}")
 
 ---
 
-## Python API: `filter_wave`
+### Python API: `filter_wave`
 
 `filter_wave` handles reading WAV audio files, decoding formats (16/24-bit PCM, 32-bit float),
 executing the filter in Rust, and writing the result to disk:
@@ -84,7 +84,7 @@ filter_wave(
 )
 ```
 
-### Parameter Reference
+#### Parameter Reference
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
@@ -97,7 +97,7 @@ filter_wave(
 
 ---
 
-## Command-Line Usage
+### Command-Line Usage
 
 The command-line interface allows filtering files via `uvx` or `uv run`:
 
@@ -111,7 +111,7 @@ uvx --from git+https://github.com/jr2804/g191-filter.git g191-filter filter \
 
 ---
 
-## Frequency Response Visualization
+### Frequency Response Visualization
 
 The frequency responses for one-shot filtering can be inspected using `get_frequency_response`:
 

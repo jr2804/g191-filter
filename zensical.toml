@@ -12,10 +12,19 @@ nav = [
     { "Credits" = "credits.md" },
     { "License" = "license.md" },
   ] },
-  { "API reference" = "reference/api.md" },
+  { "Guides" = [
+    { "One-Shot & Batch Filtering" = "guides/one_shot_filtering.md" },
+    { "Blockwise & Streaming Filtering" = "guides/blockwise_filtering.md" },
+  ] },
+  { "API reference" = [
+    { "Python API" = "reference/api.md" },
+    { "Filter Catalog" = "reference/filters.md" },
+  ] },
   { "Development" = [
+    { "Development Guide" = "development.md" },
     { "Contributing" = "contributing.md" },
     { "Code of Conduct" = "code_of_conduct.md" },
+    { "ADR 0001 — Mermaid Rendering" = "architecture/decisions/0001-mermaid-diagram-rendering.md" },
   ] },
 ]
 

@@ -2,12 +2,12 @@
 title: Blockwise & Streaming Filtering
 ---
 
-# Blockwise & Streaming Filtering
+## Blockwise & Streaming Filtering
 
 For long audio files, low-latency streaming pipelines, or memory-constrained environments,
 `BlockwiseFilter` processes signals in contiguous chunks while maintaining the filter's delay line and phase states across boundaries.
 
-## Architecture & Delay Line Continuity
+### Architecture & Delay Line Continuity
 
 When audio is processed block by block, simple convolution truncates boundary tails,
 causing audible clicks or frequency distortion at frame transitions. `BlockwiseFilter` preserves internal state buffers
@@ -43,9 +43,9 @@ sequenceDiagram
     end
 ```
 
-## Python API: `BlockwiseFilter`
+### Python API: `BlockwiseFilter`
 
-### Basic Streaming Example
+#### Basic Streaming Example
 
 ```python
 import numpy as np
@@ -71,7 +71,7 @@ filtered_stream = np.concatenate(output_chunks)
 
 ---
 
-## State Snapshotting & Checkpointing
+### State Snapshotting & Checkpointing
 
 `BlockwiseFilter` exposes its complete state as a contiguous `float64` NumPy array
 through the `.state` property for serialization, pause/resume, and distributed chunk processing.
@@ -96,7 +96,7 @@ bw2.state = saved_state
 out_2 = bw2.process(np.random.randn(2048))
 ```
 
-### State Vector Layout
+#### State Vector Layout
 
 The length of the `.state` array depends on the internal filter topology:
 
@@ -109,14 +109,14 @@ The length of the `.state` array depends on the internal filter topology:
 
 ---
 
-## Convenience Methods
+### Convenience Methods
 
 - **`bw.process_all(input_array)`**: Feeds a complete signal through the chunking loop, returning the concatenated result.
 - **`bw.reset()`**: Clears the delay lines and phase counters back to zero initial conditions.
 
 ---
 
-## Performance & Latency Comparison
+### Performance & Latency Comparison
 
 | Processing Mode | Peak Memory Usage | Latency | Recommended Scenario |
 | --------------- | ----------------- | ------- | -------------------- |
@@ -125,7 +125,7 @@ The length of the `.state` array depends on the internal filter topology:
 
 ---
 
-## Example Filter Response
+### Example Filter Response
 
 <p align="center">
   <img src="../assets/figures/irs_family.svg" alt="IRS Family Frequency Response" width="720">

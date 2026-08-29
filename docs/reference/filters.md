@@ -2,7 +2,7 @@
 title: Filter Catalog & Specifications
 ---
 
-# ITU-T G.191 Filter Catalog & Specifications
+## ITU-T G.191 Filter Catalog & Specifications
 
 This reference provides technical specifications, transfer function characteristics,
 and frequency response figures for all 20 standard ITU-T G.191 filters implemented in `g191-filter`.
@@ -40,18 +40,18 @@ mindmap
 
 ---
 
-## 1. Intermediate Reference System (IRS) Family
+### 1. Intermediate Reference System (IRS) Family
 
 The Intermediate Reference System (IRS) models acoustic-to-electrical and electrical-to-acoustic
 response curves of telephone handsets. They are indispensable for speech quality testing (e.g. ITU-T P.800, P.862 PESQ, P.863 POLQA).
 
-### Overview & Family Response
+#### Overview & Family Response
 
 <p align="center">
   <img src="../assets/figures/irs_family.svg" alt="IRS Family Frequency Response" width="740">
 </p>
 
-### Filter Specifications
+#### Filter Specifications
 
 | Filter ID | Type | Taps | Native Rate | Passband / Roll-off | Application |
 | --------- | ---- | ---- | ----------- | ------------------- | ----------- |
@@ -60,7 +60,7 @@ response curves of telephone handsets. They are indispensable for speech quality
 | `mod_irs16khz` | FIR | 495 | 16 kHz | 50–7000 Hz wideband | Modified IRS wideband speech codec evaluation |
 | `mod_irs48khz` | FIR | 513 | 48 kHz | 50–7000 Hz fullband | Modified IRS at studio / 48 kHz sampling rate |
 
-### Individual Frequency Responses
+#### Individual Frequency Responses
 
 === "irs8khz (8 kHz)"
     <p align="center">
@@ -84,17 +84,17 @@ response curves of telephone handsets. They are indispensable for speech quality
 
 ---
 
-## 2. 48 kHz Low-Pass Filter Suite
+### 2. 48 kHz Low-Pass Filter Suite
 
 A family of linear-phase FIR low-pass filters designed for bandwidth limiting, anti-aliasing, and anti-imaging filtering at a standard 48 kHz sampling rate.
 
-### Family Response
+#### Family Response
 
 <p align="center">
   <img src="../assets/figures/lp_48k_family.svg" alt="48 kHz Low-Pass Family Response" width="740">
 </p>
 
-### Specifications
+#### Specifications
 
 | Filter ID | Cutoff ($f_c$) | Taps | Passband Ripple | Stopband Rejection |
 | --------- | -------------- | ---- | --------------- | ------------------ |
@@ -106,7 +106,7 @@ A family of linear-phase FIR low-pass filters designed for bandwidth limiting, a
 | `lp14_48khz` | 14.0 kHz | 235 | < 0.05 dB | > 80 dB |
 | `lp20_48khz` | 20.0 kHz | 165 | < 0.05 dB | > 80 dB |
 
-### Individual Responses
+#### Individual Responses
 
 === "lp1p5_48khz (1.5 kHz)"
     <p align="center">
@@ -145,17 +145,17 @@ A family of linear-phase FIR low-pass filters designed for bandwidth limiting, a
 
 ---
 
-## 3. Resampling & Rate-Conversion Filters
+### 3. Resampling & Rate-Conversion Filters
 
 Filters optimized for integer rate conversion (decimation and interpolation) between standard telecom rates (8, 16, 48 kHz).
 
-### Family Response
+#### Family Response
 
 <p align="center">
   <img src="../assets/figures/resampling_family.svg" alt="Resampling Family Response" width="740">
 </p>
 
-### Specifications
+#### Specifications
 
 | Filter ID | Type | Rate Factor | Stages / Taps | Description |
 | --------- | ---- | ----------- | ------------- | ----------- |
@@ -166,7 +166,7 @@ Filters optimized for integer rate conversion (decimation and interpolation) bet
 | `iir_casc_lp_3_to_1` | IIR Cascade | 3:1 Down | 7 Biquads | 7-stage biquad cascade low-pass for 3:1 decimation |
 | `iir_casc_lp_1_to_3` | IIR Cascade | 1:3 Up | 7 Biquads | 7-stage biquad cascade low-pass for 1:3 interpolation |
 
-### Individual Responses
+#### Individual Responses
 
 === "hq_down_2_to_1"
     <p align="center">
@@ -200,17 +200,17 @@ Filters optimized for integer rate conversion (decimation and interpolation) bet
 
 ---
 
-## 4. Telecom & Conditioning Filters
+### 4. Telecom & Conditioning Filters
 
 Filters for voiceband conditioning, standard PCM channel emulation, and DC offset removal.
 
-### Family Response
+#### Family Response
 
 <p align="center">
   <img src="../assets/figures/telecom_family.svg" alt="Telecom Family Response" width="740">
 </p>
 
-### Specifications
+#### Specifications
 
 | Filter ID | Type | Taps / Order | Native Rate | Description |
 | --------- | ---- | ------------ | ----------- | ----------- |
@@ -218,7 +218,7 @@ Filters for voiceband conditioning, standard PCM channel emulation, and DC offse
 | `g712_8khz` | IIR Parallel | 4 Biquads (Order 8) | 8 kHz | ITU-T G.712 PCM channel filter (attenuation and group delay template) |
 | `dir_dc_removal` | IIR Direct | 1st Order ($a=[1, -1], b=[1, -0.985]$) | 8 kHz | High-pass DC offset notch filter |
 
-### Individual Responses
+#### Individual Responses
 
 === "flat_band_pass"
     <p align="center">

@@ -11,7 +11,7 @@ hide:
 ## Documentation
 
 - [API reference](reference/api.md)
-- [Blockwise filtering](reference/blockwise_filtering.md)
+- [Blockwise filtering](guides/blockwise_filtering.md)
 - [Credits](credits.md)
 - [License](license.md)
 - [Contributing](contributing.md)

@@ -600,8 +600,8 @@ fn parallel_to_ba(b: &[[f64; 3]], c: &[[f64; 2]], gain: f64, direct: f64) -> (Ve
     // H(z) = gain * (direct + sum_i (b_i0 + b_i1 z^-1 + b_i2 z^-2) / (1 + c_i0 z^-1 + c_i1 z^-2))
     let num_blocks = b.len();
     let mut a_out: Vec<f64> = vec![1.0];
-    for i in 0..num_blocks {
-        let bc = [1.0, c[i][0], c[i][1]];
+    for ci in c.iter().take(num_blocks) {
+        let bc = [1.0, ci[0], ci[1]];
         let mut new_a = vec![0.0; a_out.len() + bc.len() - 1];
         for (j, &a_val) in a_out.iter().enumerate() {
             for (k, &sa) in bc.iter().enumerate() {
@@ -617,12 +617,12 @@ fn parallel_to_ba(b: &[[f64; 3]], c: &[[f64; 2]], gain: f64, direct: f64) -> (Ve
         b_out[k] += gain * direct * ak;
     }
     // Each block: gain * (b_i0 + b_i1 z^-1 + b_i2 z^-2) * (a_out / block_c_i)
-    for i in 0..num_blocks {
+    for (bi, ci) in b.iter().zip(c.iter()).take(num_blocks) {
         // a_out / block_c_i = product of all other blocks' denominators
         let mut other_a: Vec<f64> = vec![1.0];
-        for j in 0..num_blocks {
-            if j == i { continue; }
-            let jc = [1.0, c[j][0], c[j][1]];
+        for cj in c.iter().take(num_blocks) {
+            if std::ptr::eq(cj, ci) { continue; }
+            let jc = [1.0, cj[0], cj[1]];
             let mut new_a = vec![0.0; other_a.len() + jc.len() - 1];
             for (m, &av) in other_a.iter().enumerate() {
                 for (n, &sv) in jc.iter().enumerate() {
@@ -632,7 +632,7 @@ fn parallel_to_ba(b: &[[f64; 3]], c: &[[f64; 2]], gain: f64, direct: f64) -> (Ve
             other_a = new_a;
         }
         // Numerator contribution: gain * (b_i0 + b_i1 z^-1 + b_i2 z^-2) * other_a
-        for (m, &bm) in b[i].iter().enumerate() {
+        for (m, &bm) in bi.iter().enumerate() {
             for (n, &av) in other_a.iter().enumerate() {
                 b_out[m + n] += gain * bm * av;
             }

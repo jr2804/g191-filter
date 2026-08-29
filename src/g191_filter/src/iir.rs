@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright 2026, Jan.Reimes
 
-/// IIR filter implementations matching STL reference algorithms
-/// (iir-lib.c: stdpcm_kernel, cascade_form_iir_*_kernel, direct_form_iir_*_kernel)
+//! IIR filter implementations matching STL reference algorithms
+//! (iir-lib.c: stdpcm_kernel, cascade_form_iir_*_kernel, direct_form_iir_*_kernel)
 
 /// Parallel-form IIR filter (STL stdpcm / G.712)
 pub struct IirFilter {

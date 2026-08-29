@@ -3,7 +3,6 @@
 
 /// FIR filter implementation matching STL reference algorithms
 /// (fir-lib.c: fir_initialization, fir_downsampling_kernel, fir_upsampling_kernel)
-
 pub struct FirFilter {
     /// FIR coefficients (already gain-scaled)
     h0: Vec<f64>,
@@ -97,7 +96,7 @@ impl FirFilter {
         // Second Step: remaining part in x-array
         self.k0 = kstart as i64;
         let mut kx = kstart + downfac;
-        while kx <= lenx - 1 {
+        while kx < lenx {
             let mut acc = x[kx] * self.h0[0];
             for kappa in 1..lenh0 {
                 acc += x[kx - kappa] * self.h0[kappa];

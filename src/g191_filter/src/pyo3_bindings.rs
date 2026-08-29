@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright 2026, Jan.Reimes
+#![allow(clippy::useless_conversion)] // `?` on PyErr in PyResult fns triggers identity From
 
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
@@ -26,7 +27,7 @@ fn filter_wave(
     block_size: Option<usize>,
 ) -> PyResult<String> {
     let fid = FilterId::from_str(filter_id)
-        .map_err(|e| PyValueError::new_err(e))?;
+        .map_err(PyValueError::new_err)?;
 
     let config = get_filter_config(fid)
         .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
@@ -37,7 +38,7 @@ fn filter_wave(
         output_file.map(|s| s.to_string()).unwrap_or_else(|| {
             let path = PathBuf::from(input_file);
             let base = path.file_stem().unwrap().to_str().unwrap();
-            let dir = path.parent().unwrap_or(&std::path::Path::new(""));
+            let dir = path.parent().unwrap_or(std::path::Path::new(""));
             dir.join(format!("{base}_filtered.wav")).to_string_lossy().to_string()
         })
     };
@@ -46,10 +47,8 @@ fn filter_wave(
 
     let (resampled, effective_sr) = if let Some(target_sr) = sample_rate {
         if target_sr != original_sr {
-            let coeffs = get_fir_resample_coeffs();
             let resampler = crate::Resampler::new(original_sr, target_sr);
-            let mut phase = 0usize;
-            let resampled = resampler.upsample(&samples, &coeffs, &mut phase);
+            let resampled = resampler.resample(&samples);
             (resampled, target_sr)
         } else {
             (samples, original_sr)
@@ -98,7 +97,7 @@ fn filter_array<'py>(
     block_size: Option<usize>,
 ) -> PyResult<Bound<'py, PyArray1<f64>>> {
     let fid = FilterId::from_str(filter_id)
-        .map_err(|e| PyValueError::new_err(e))?;
+        .map_err(PyValueError::new_err)?;
 
     // block_size=None means no chunking (one-shot processing).
     // Explicit chunking is available via BlockwiseFilter for streaming use cases.
@@ -156,7 +155,7 @@ impl BlockwiseFilterPy {
     #[pyo3(signature = (filter_id, block_size=None))]
     fn new(filter_id: &str, block_size: Option<usize>) -> PyResult<Self> {
         let fid = FilterId::from_str(filter_id)
-            .map_err(|e| PyValueError::new_err(e))?;
+            .map_err(PyValueError::new_err)?;
         let bs = block_size.unwrap_or(8192).max(1);
         let bw = BlockwiseFilter::new(fid, bs)
             .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
@@ -196,7 +195,7 @@ impl BlockwiseFilterPy {
     #[setter]
     fn set_state<'py>(
         &mut self,
-        py: Python<'py>,
+        _py: Python<'py>,
         value: PyReadonlyArray1<'py, f64>,
     ) -> PyResult<()> {
         let v = value.as_array().to_vec();
@@ -255,7 +254,7 @@ fn export_impulse_response(
     fade_out: Option<usize>,
 ) -> PyResult<String> {
     let fid = FilterId::from_str(filter_id)
-        .map_err(|e| PyValueError::new_err(e))?;
+        .map_err(PyValueError::new_err)?;
 
     let config = get_filter_config(fid)
         .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
@@ -267,8 +266,7 @@ fn export_impulse_response(
                 h0.clone()
             } else {
                 let resampler = crate::Resampler::new(config.sample_rate, sample_rate);
-                let mut phase = 0usize;
-                resampler.upsample(h0, h0, &mut phase)
+                resampler.resample(h0)
             }
         }
         _ => {
@@ -302,8 +300,7 @@ fn export_impulse_response(
 
     if (sample_rate - config.sample_rate).abs() > 1e-9 {
         let resampler = crate::Resampler::new(config.sample_rate, sample_rate);
-        let mut phase = 0usize;
-        ir = resampler.upsample(&ir, &ir, &mut phase);
+        ir = resampler.resample(&ir);
     }
 
     write_wav(output_file, &ir, sample_rate, hound::SampleFormat::Float, 32)?;
@@ -314,7 +311,7 @@ fn export_impulse_response(
 #[pyfunction]
 fn get_coefficients_ba_py(filter_id: &str) -> PyResult<(Vec<f64>, Vec<f64>)> {
     let fid = FilterId::from_str(filter_id)
-        .map_err(|e| PyValueError::new_err(e))?;
+        .map_err(PyValueError::new_err)?;
     get_coefficients_ba(fid)
         .ok_or_else(|| PyValueError::new_err(format!("Cannot convert filter {filter_id} to (b,a) format")))
 }
@@ -323,7 +320,7 @@ fn get_coefficients_ba_py(filter_id: &str) -> PyResult<(Vec<f64>, Vec<f64>)> {
 #[pyfunction]
 fn get_coefficients_sos_py(filter_id: &str) -> PyResult<Vec<[f64; 6]>> {
     let fid = FilterId::from_str(filter_id)
-        .map_err(|e| PyValueError::new_err(e))?;
+        .map_err(PyValueError::new_err)?;
     get_coefficients_sos(fid)
         .ok_or_else(|| PyValueError::new_err(format!("Cannot convert filter {filter_id} to SOS format")))
 }
@@ -341,7 +338,7 @@ fn list_filters() -> Vec<String> {
 #[pyfunction]
 fn get_filter_info_py<'a>(py: Python<'a>, filter_id: &str) -> PyResult<Py<PyDict>> {
     let fid = FilterId::from_str(filter_id)
-        .map_err(|e| PyValueError::new_err(e))?;
+        .map_err(PyValueError::new_err)?;
     let info = filter_info(fid)
         .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
 
@@ -358,6 +355,9 @@ fn get_filter_info_py<'a>(py: Python<'a>, filter_id: &str) -> PyResult<Py<PyDict
     Ok(dict.into())
 }
 
+/// Frequency response arrays (frequencies, magnitudes) bound to Python.
+type FreqResponse<'py> = (Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>);
+
 /// Compute frequency response of a filter
 #[pyfunction]
 fn get_frequency_response<'py>(
@@ -365,9 +365,9 @@ fn get_frequency_response<'py>(
     filter_id: &str,
     n_points: usize,
     sample_rate: f64,
-) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>)> {
+) -> PyResult<FreqResponse<'py>> {
     let fid = FilterId::from_str(filter_id)
-        .map_err(|e| PyValueError::new_err(e))?;
+        .map_err(PyValueError::new_err)?;
 
     let (b, a) = get_coefficients_ba(fid)
         .ok_or_else(|| PyValueError::new_err(format!("Cannot compute frequency response for {filter_id}")))?;
@@ -466,25 +466,6 @@ fn write_wav(
     writer.finalize()
         .map_err(|e| PyValueError::new_err(format!("Failed to finalize WAV: {e}")))?;
     Ok(())
-}
-
-fn get_fir_resample_coeffs() -> Vec<f64> {
-    // Sinc-based low-pass filter for sample rate conversion
-    let n = 64;
-    let mut coeffs = vec![0.0; n];
-    let fc = 0.5;
-    let center = n / 2;
-    for i in 0..n {
-        let x = (i as i32 - center as i32) as f64;
-        if x == 0.0 {
-            coeffs[i] = 4.0 * fc;
-        } else {
-            coeffs[i] = 4.0 * fc * (std::f64::consts::PI * x * fc).sin() / (std::f64::consts::PI * x * fc);
-        }
-        let window = 0.54 - 0.46 * (2.0 * std::f64::consts::PI * i as f64 / (n - 1) as f64).cos();
-        coeffs[i] *= window;
-    }
-    coeffs
 }
 
 #[pymodule]

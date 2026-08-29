@@ -54,3 +54,33 @@ NumberArg2 = Annotated[
     float,
     typer.Argument(help="Second number"),
 ]
+
+# Filter command arguments
+FilterIdArg = Annotated[
+    str,
+    typer.Argument(help="ITU-T G.191 filter ID (case-insensitive)"),
+]
+
+InputWaveFile = Annotated[
+    str,
+    typer.Argument(help="Path to input WAV file"),
+]
+
+OutputFileArg = Annotated[
+    str,
+    typer.Option(
+        "--output-file",
+        "-o",
+        help="Output WAV file path (default: overwrite input)",
+    ),
+]
+
+BlockSizeOption = Annotated[
+    int,
+    typer.Option(
+        "--block-size",
+        "-b",
+        help="Chunk size for streaming processing (default: 8192)",
+        min=1,
+    ),
+]

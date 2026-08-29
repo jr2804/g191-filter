@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.metadata
 
 from _native import (  # noqa: F401
+    BlockwiseFilter,
     export_impulse_response,
     filter_array,
     filter_wave,

@@ -6,7 +6,7 @@ from importlib.metadata import version
 
 import typer
 
-# Import commands to register them with app
+# Import commands to register them with app (after app exists)
 from g191_filter.cli import commands  # noqa: E402, F401
 
 app = typer.Typer(

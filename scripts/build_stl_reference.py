@@ -71,7 +71,9 @@ def _copy_binaries(build_dir: Path) -> None:
     """Copy built STL binaries to the project root."""
     bin_dir = build_dir / "bin" / "Debug"
     dest = BASE_DIR
-    for exe in ("filter.exe", "firdemo.exe"):
+    suffix = ".exe" if sys.platform == "win32" else ""
+    for base in ("filter", "firdemo"):
+        exe = base + suffix
         src = bin_dir / exe
         if src.exists():
             dest_path = dest / exe

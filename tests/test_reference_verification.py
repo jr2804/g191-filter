@@ -20,7 +20,8 @@ from g191_filter import filter_array
 BASE_DIR = Path(__file__).resolve().parents[1]
 STL_DIR = BASE_DIR / "tmp" / "_stl_extract"
 BUILD_BIN_DIR = STL_DIR / "build" / "bin" / "Debug"
-FILTER_BIN_FILE = BUILD_BIN_DIR / "filter.exe"
+_EXE = ".exe" if sys.platform == "win32" else ""
+FILTER_BIN_FILE = BUILD_BIN_DIR / ("filter" + _EXE)
 TEST_DATA_FILE = STL_DIR / "src" / "fir" / "test_data" / "test.src"
 
 # Filter pairs where the STL reference produces the same output length
@@ -52,16 +53,16 @@ def stl_bin_file() -> Path:
     if cp.returncode != 0:
         pytest.fail(f"STL reference build failed:\n{cp.stdout}\n{cp.stderr}")
     if not FILTER_BIN_FILE.exists():
-        pytest.fail(f"filter.exe not found after build at {FILTER_BIN_FILE}")
+        pytest.fail(f"filter binary not found after build at {FILTER_BIN_FILE}")
     return FILTER_BIN_FILE
 
 
 @pytest.fixture(scope="session")
 def openitu_test_runner_file() -> Path:
     """Return the openitu STL test runner (basop_test.exe)."""
-    runner = BUILD_BIN_DIR / "basop_test.exe"
+    runner = BUILD_BIN_DIR / ("basop_test" + _EXE)
     if not runner.exists():
-        pytest.skip(f"openitu basop_test.exe not found at {runner} — run CMake build first")
+        pytest.skip(f"openitu basop_test not found at {runner} — run CMake build first")
     return runner
 
 

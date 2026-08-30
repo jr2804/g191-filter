@@ -46,7 +46,7 @@ jobs:
           uvx maturin develop -m src/g191_filter/Cargo.toml --release
 
       - name: Generate filter figures
-        run: uv run python scripts/gen_filter_figures.py
+        run: uv run scripts/gen_filter_figures.py
 
       - name: Build documentation
         run: mise docs

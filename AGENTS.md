@@ -100,8 +100,8 @@ Start lean. Add child AGENTS.md entries incrementally when boundaries become dur
 
 Top-level boundaries in this project:
 
-- `src/g191_filter/` (primary package code)
-- `tests/` (test suite)
+- `src/g191_filter/` (primary package code) — see src/g191_filter/AGENTS.md
+- `tests/` (test suite) — see tests/AGENTS.md
 - `docs/` (documentation)
 - `.config/mise/` (task/tooling configuration)
 - `.config/mise/conf.d/` (dev-feature MCP and skills task fragments)

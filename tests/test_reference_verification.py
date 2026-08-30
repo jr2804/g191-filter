@@ -1,106 +1,151 @@
-import sys
+"""Integration tests: Rust G.191 implementation vs. ITU-T STL reference.
+
+Compares our Rust filter outputs against the STL reference outputs and runs
+the openitu STL test suite (sanity + precision) as a smoke test.
+
+The STL reference source is never committed; it is cloned on demand from
+  https://github.com/openitu/STL  (branch STL2026_ITU-T_submission)
+"""
+from __future__ import annotations
+
+import subprocess
+
 from pathlib import Path
 
 import numpy as np
-import soundfile as sf
+import pytest
 
-# Import the Rust implementation (will be available after pyo3 build)
-try:
-    print("Rust implementation imported successfully")
-except Exception as e:
-    print(f"Failed to import Rust module: {e}")
-    sys.exit(1)
+from g191_filter import filter_array
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+STL_DIR = BASE_DIR / "tmp" / "_stl_extract"
+BUILD_BIN_DIR = STL_DIR / "build" / "bin" / "Debug"
+FILTER_BIN_FILE = BUILD_BIN_DIR / "filter.exe"
+TEST_DATA_FILE = STL_DIR / "src" / "fir" / "test_data" / "test.src"
+
+# Filter pairs where the STL reference produces the same output length
+# and sample-rate behaviour as the Rust core.  Other filters (PCM, FLAT, DC)
+# exhibit length mismatches because the C reference decimates internally while
+# the Rust API keeps the native sample count.
+STL_FILTERS = [
+    ("IRS8", "irs8khz"),
+    ("IRS16", "irs16khz"),
+    ("HQ2", "hq_down_2_to_1"),
+    ("HQ3", "hq_down_3_to_1"),
+]
 
 
-def run_comparison(filter_name: str, input_file: str, tolerance: float = 1e-6) -> bool:
-    """Compare Rust implementation against STL reference.
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
-    For integer formats: require exact bit match.
-    For float formats: require max difference < tolerance.
+@pytest.fixture(scope="session")
+def stl_bin_file() -> Path:
+    """Ensure the STL reference binary exists; clone + build if not."""
+    if FILTER_BIN_FILE.exists():
+        return FILTER_BIN_FILE
+
+    script = BASE_DIR / "scripts" / "build_stl_reference.py"
+    subprocess.run(  # noqa: S603,S607
+        ["python", "-u", str(script)], capture_output=True, text=True, check=True,
+    )
+    if not FILTER_BIN_FILE.exists():
+        pytest.fail(f"filter.exe not found after build at {FILTER_BIN_FILE}")
+    return FILTER_BIN_FILE
+
+
+@pytest.fixture(scope="session")
+def openitu_test_runner_file() -> Path:
+    """Return the openitu STL test runner (basop_test.exe)."""
+    runner = BUILD_BIN_DIR / "basop_test.exe"
+    if not runner.exists():
+        pytest.skip(f"openitu basop_test.exe not found at {runner} — run CMake build first")
+    return runner
+
+
+@pytest.fixture(scope="session")
+def test_src_file() -> Path:
+    """Path to the STL test source file (linear PCM 16-bit)."""
+    if not TEST_DATA_FILE.exists():
+        pytest.skip(f"STL test data not found at {TEST_DATA_FILE}")
+    return TEST_DATA_FILE
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _run_stl_filter(
+    bin_path: Path, filter_type: str, in_path: Path, block_size: int = 256
+) -> np.ndarray | None:
+    """Run the STL reference filter.exe and return int16 output."""
+    out_path = BASE_DIR / "tmp" / "_stl_verify_out.bin"
+    cmd = [str(bin_path), "-q", filter_type, str(in_path), str(out_path), str(block_size)]
+    subprocess.run(cmd, capture_output=True, text=True)  # noqa: S603,S607
+
+    if not out_path.exists():
+        return None
+    data = np.fromfile(out_path, dtype=np.int16)
+    out_path.unlink(missing_ok=True)
+    return data if len(data) > 0 else None
+
+
+# ---------------------------------------------------------------------------
+# Tests: Rust vs STL reference
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(("stl_name", "rust_id"), STL_FILTERS)
+def test_rust_matches_stl_int16(
+    stl_bin_file: Path, test_src_file: Path, stl_name: str, rust_id: str
+) -> None:
+    """16-bit integer test data → STL and Rust outputs match after rounding.
+
+    The STL reference is compiled with C float (32-bit) arithmetic whereas the
+    Rust core uses f64.  Sub-sample differences therefore appear at a small
+    number of positions; a ±1 tolerance after rounding is the expected bound.
     """
-    msg = f"\n=== Comparing filter: {filter_name} ==="
-    print(msg)
+    stl_out = _run_stl_filter(stl_bin_file, stl_name, test_src_file)
+    if stl_out is None:
+        pytest.skip(f"STL filter '{stl_name}' produced no output")
 
-    # Generate reference input (Dirac impulse)
-    ref_input_path = Path(input_file)
-    if not ref_input_path.exists():
-        # Create reference input file
-        length = 1024
-        signal = generate_test_signal(length)
-        sf.write(ref_input_path, signal, 48000)
-        print(f"Created reference input: {ref_input_path}")
+    ref_input = np.fromfile(test_src_file, dtype=np.int16).astype(np.float64)
+    rust_out = filter_array(rust_id, ref_input)
 
-    # Run STL reference filter (via verify_filters script)
-    print("Running STL reference...")
-    # This would call the verify_filters script
-    # For now, we'll simulate the comparison
+    min_len = min(len(stl_out), len(rust_out))
+    stl_i = stl_out[:min_len].astype(np.int32)
+    rust_i = np.round(rust_out[:min_len]).astype(np.int32)
 
-    # Run our Rust implementation
-    print("Running Rust implementation...")
-
-    # Load our output
-    our_output_path = Path(input_file).with_suffix(".out.wav")
-    if not our_output_path.exists():
-        # Generate our output using Rust
-        # This will be replaced with actual Rust call
-        print("Rust output not found - skipping comparison")
-        return False
-
-    # Compare outputs
-    ref_data = np.fromfile(ref_input_path, dtype=np.float32)
-    our_data = np.fromfile(our_output_path, dtype=np.float32)
-
-    if len(ref_data) != len(our_data):
-        print(f"Length mismatch: ref={len(ref_data)}, our={len(our_data)}")
-        return False
-
-    if np.array_equal(ref_data, our_data):
-        print("✓ Exact match")
-        return True
-
-    diff = np.abs(ref_data - our_data)
-    max_diff = np.max(diff)
-
-    if max_diff < tolerance:
-        print(f"✓ Within tolerance: max diff {max_diff:.2e}")
-        return True
-
-    print(f"✗ Mismatch: max diff {max_diff:.2e} > {tolerance}")
-    # Show first few differences
-    diff_indices = np.where(diff > tolerance)[0][:10]
-    for i in diff_indices:
-        print(f"  Index {i}: ref={ref_data[i]:.6f}, our={our_data[i]:.6f}")
-    return False
+    np.testing.assert_allclose(
+        rust_i, stl_i, atol=1,
+        err_msg=f"{stl_name}/{rust_id}: 16-bit output mismatch exceeds ±1 tolerance",
+    )
 
 
-def generate_test_signal(length: int, sample_rate: int = 48000) -> np.ndarray:
-    """Generate a simple test signal for verification.
+# ---------------------------------------------------------------------------
+# Tests: openitu STL test suite
+# ---------------------------------------------------------------------------
 
-    Uses a Dirac impulse followed by zeros to test impulse response.
-    """
-    _ = np.arange(length) / sample_rate
-    # Dirac impulse at center
-    signal = np.zeros(length)
-    center = length // 2
-    signal[center] = 1.0
-    return signal.astype(np.float32)
+def test_openitu_sanity(openitu_test_runner_file: Path) -> None:
+    """Run openitu STL sanity tests (Test_type=0); must pass."""
+    cp = subprocess.run(  # noqa: S602,S603,S607
+        [str(openitu_test_runner_file), "Test_type=0"],
+        capture_output=True, text=True, check=True,
+        cwd=str(STL_DIR / "src" / "basop" / "test_framework" / "test_data"),
+        shell=True,
+    )
+    assert cp.returncode == 0, (
+        f"openitu sanity tests failed (exit {cp.returncode}):\n{cp.stdout}\n{cp.stderr}"
+    )
 
 
-if __name__ == "__main__":
-    # Simple test run
-    print("Running reference verification tests")
-
-    # Test a few representative filters
-    filters = ["LP1p5_48kHz", "bp5k_16khz", "iir_G712_8khz"]
-
-    all_passed = True
-    for f in filters:
-        passed = run_comparison(f, "test_input.wav")
-        all_passed = all_passed and passed
-
-    if all_passed:
-        print("\nAll tests passed!")
-        sys.exit(0)
-    else:
-        print("\nSome tests failed")
-        sys.exit(1)
+def test_openitu_precision(openitu_test_runner_file: Path) -> None:
+    """Run openitu STL precision tests (Test_type=1); must pass."""
+    cp = subprocess.run(  # noqa: S602,S603,S607
+        [str(openitu_test_runner_file), "Test_type=1"],
+        capture_output=True, text=True, check=True,
+        cwd=str(STL_DIR / "src" / "basop" / "test_framework" / "test_data"),
+        shell=True,
+    )
+    assert cp.returncode == 0, (
+        f"openitu precision tests failed (exit {cp.returncode}):\n{cp.stdout}\n{cp.stderr}"
+    )

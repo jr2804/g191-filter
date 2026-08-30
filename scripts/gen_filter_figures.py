@@ -213,6 +213,19 @@ INDIVIDUAL_FILTERS = [
 ]
 
 
+# Log-frequency tick positions shared by every figure. The Nyquist frequency
+# itself is never labeled; ticks below the axis minimum are dropped.
+_FREQ_TICKS = [20, 100, 500, 1000, 4000, 8000, 16000, 20000]
+
+
+def _apply_freq_ticks(ax: plt.Axes, sr: int) -> None:
+    """Set manual Hz tick labels (1k instead of 10^3), capped below Nyquist."""
+    lo = ax.get_xlim()[0]
+    ticks = [t for t in _FREQ_TICKS if lo <= t < sr / 2.0]
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([f"{t / 1000:g}k" if t >= 1000 else f"{t:g}" for t in ticks], rotation=30)
+
+
 def _response(fid: str, n: int, sr: int, f_min: float) -> tuple[np.ndarray, np.ndarray]:
     """Frequency response masked to [f_min, Nyquist]."""
     w, mag = g191.get_frequency_response(fid, n, sr)
@@ -236,13 +249,14 @@ def generate_single_charts() -> None:
         fig, ax = plt.subplots(figsize=(7.2, 3.8))
         ax.semilogx(w_p, mag_p, color=item["color"])
         ax.set(
-            xlabel="Frequency (Hz)",
             ylabel="Magnitude (dB)",
             title=item["title"],
             xlim=(f_min, sr / 2.0),
             ylim=item["y_domain"],
         )
+        ax.set_xlabel("Frequency (Hz)", labelpad=40)
         ax.grid(True, which="both", alpha=0.4)
+        _apply_freq_ticks(ax, sr)
         _finalize(fig, OUT_DIR / f"{fid}.svg")
 
 
@@ -258,14 +272,15 @@ def generate_group_charts() -> None:
         w, m = _response(fid, 2048, sr, 50)
         ax.semilogx(w, m, color=col, label=lbl)
     ax.set(
-        xlabel="Frequency (Hz)",
         ylabel="Magnitude (dB)",
         title="Intermediate Reference System (IRS) Filter Family",
         xlim=(50, 24000),
         ylim=(-60, 10),
     )
+    ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
     ax.legend()
+    _apply_freq_ticks(ax, 48000)
     _finalize(fig, OUT_DIR / "irs_family.svg")
 
     # 2. 48 kHz Low-Pass FIR Family Comparison
@@ -282,14 +297,15 @@ def generate_group_charts() -> None:
         w, m = _response(fid, 2048, 48000, 50)
         ax.semilogx(w, m, color=col, label=lbl)
     ax.set(
-        xlabel="Frequency (Hz)",
         ylabel="Magnitude (dB)",
         title="G.191 48 kHz Low-Pass Filter Suite",
         xlim=(50, 24000),
         ylim=(-100, 15),
     )
+    ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
     ax.legend()
+    _apply_freq_ticks(ax, 48000)
     _finalize(fig, OUT_DIR / "lp_48k_family.svg")
 
     # 3. Resampling & Rate-Change Filters Comparison
@@ -303,14 +319,15 @@ def generate_group_charts() -> None:
         w, m = _response(fid, 2048, sr, 50)
         ax.semilogx(w, m, color=col, label=lbl)
     ax.set(
-        xlabel="Frequency (Hz)",
         ylabel="Magnitude (dB)",
         title="G.191 Rate-Conversion & Resampling Filters",
         xlim=(50, 24000),
         ylim=(-120, 10),
     )
+    ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
     ax.legend()
+    _apply_freq_ticks(ax, 48000)
     _finalize(fig, OUT_DIR / "resampling_family.svg")
 
     # 4. Telecom & Processing Filters (G.712, DC Removal, Flat Band-Pass)
@@ -323,14 +340,15 @@ def generate_group_charts() -> None:
         w, m = _response(fid, 2048, sr, 10)
         ax.semilogx(w, m, color=col, label=lbl)
     ax.set(
-        xlabel="Frequency (Hz)",
         ylabel="Magnitude (dB)",
         title="G.191 Telecom & Conditioning Filters (8 kHz)",
         xlim=(10, 4000),
         ylim=(-60, 20),
     )
+    ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
     ax.legend()
+    _apply_freq_ticks(ax, 8000)
     _finalize(fig, OUT_DIR / "telecom_family.svg")
 
 

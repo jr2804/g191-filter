@@ -75,7 +75,8 @@ jobs:
     - name: Sync Cargo version to ${{ steps.version.outputs.version }}
       run: |
         set -euo pipefail
-        sed -i 's/^version = "0.0.0"$/version = "${{ steps.version.outputs.version }}"/' src/g191_filter/Cargo.toml
+        sed -i -E 's/^version = "[0-9][^"]*"$/version = "${{ steps.version.outputs.version }}"/' src/g191_filter/Cargo.toml
+        grep -m1 '^version' src/g191_filter/Cargo.toml
     - name: Build sdist
       run: uv build --sdist
     - name: Build native wheel

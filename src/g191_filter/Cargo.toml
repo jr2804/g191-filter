@@ -1,6 +1,10 @@
 [package]
 name = "g191_filter_core"
-version = "0.1.0"
+# CalVer YYYY.M.N is the single source of truth; the release workflow
+# rewrites this line before running maturin build so the built wheel
+# matches the sdist version produced by uv-dynamic-versioning.
+# Local dev builds get "0.0.0" (mismatch with sdist is expected).
+version = "0.0.0"
 edition = "2021"
 license = "MIT"
 authors = ["Jan.Reimes <jan.reimes@head-acoustics.com>"]

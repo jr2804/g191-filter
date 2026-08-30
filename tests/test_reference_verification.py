@@ -47,7 +47,7 @@ def stl_bin_file() -> Path:
 
     script = BASE_DIR / "scripts" / "build_stl_reference.py"
     subprocess.run(  # noqa: S603,S607
-        ["python", "-u", str(script)], capture_output=True, text=True, check=True,
+        ["uv", "run", "-u", str(script)], capture_output=True, text=True, check=True,
     )
     if not FILTER_BIN_FILE.exists():
         pytest.fail(f"filter.exe not found after build at {FILTER_BIN_FILE}")

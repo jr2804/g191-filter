@@ -7,7 +7,6 @@ STL2026_ITU-T_submission branch and built with CMake.
 Artifacts produced:
     filter.exe  — standalone single-filter test program
     firdemo.exe — cascading multi-filter demo program
-    basop_test.exe — openitu precision test runner
 """
 from __future__ import annotations
 
@@ -69,9 +68,10 @@ def _cmake_build(build_dir: Path) -> None:
 
 
 def _copy_binaries(build_dir: Path) -> None:
+    """Copy built STL binaries to the project root."""
     bin_dir = build_dir / "bin" / "Debug"
     dest = BASE_DIR
-    for exe in ("filter.exe", "firdemo.exe", "basop_test.exe"):
+    for exe in ("filter.exe", "firdemo.exe"):
         src = bin_dir / exe
         if src.exists():
             dest_path = dest / exe

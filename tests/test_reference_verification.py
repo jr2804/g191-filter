@@ -9,7 +9,7 @@ The STL reference source is never committed; it is cloned on demand from
 from __future__ import annotations
 
 import subprocess
-
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -46,9 +46,11 @@ def stl_bin_file() -> Path:
         return FILTER_BIN_FILE
 
     script = BASE_DIR / "scripts" / "build_stl_reference.py"
-    subprocess.run(  # noqa: S603,S607
-        ["uv", "run", "-u", str(script)], capture_output=True, text=True, check=True,
+    cp = subprocess.run(  # noqa: S603
+        [sys.executable, "-u", str(script)], capture_output=True, text=True, check=False
     )
+    if cp.returncode != 0:
+        pytest.fail(f"STL reference build failed:\n{cp.stdout}\n{cp.stderr}")
     if not FILTER_BIN_FILE.exists():
         pytest.fail(f"filter.exe not found after build at {FILTER_BIN_FILE}")
     return FILTER_BIN_FILE
@@ -81,7 +83,9 @@ def _run_stl_filter(
     """Run the STL reference filter.exe and return int16 output."""
     out_path = BASE_DIR / "tmp" / "_stl_verify_out.bin"
     cmd = [str(bin_path), "-q", filter_type, str(in_path), str(out_path), str(block_size)]
-    subprocess.run(cmd, capture_output=True, text=True)  # noqa: S603,S607
+    cp = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603,S607
+    if cp.returncode != 0:
+        return None
 
     if not out_path.exists():
         return None

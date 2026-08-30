@@ -5,6 +5,10 @@
 node = "latest"
 bun = "latest"
 
+# Build toolchain - CMake + zig provide the C compiler (zig cc)
+cmake = "latest"
+zig = "latest"
+
 # Linter/formatter/type checker tools
 "ruff" = "latest"
 "ty" = "latest"

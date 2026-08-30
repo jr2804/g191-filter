@@ -48,7 +48,12 @@ def _clone() -> None:
 def _cmake_configure(build_dir: Path) -> None:
     print(f"Configuring CMake in {build_dir} ...")
     subprocess.run(
-        ["cmake", "..", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"],
+        [
+            "cmake",
+            "..",
+            "-DCMAKE_C_COMPILER=zig",
+            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+        ],
         cwd=str(build_dir),
         check=True,
     )

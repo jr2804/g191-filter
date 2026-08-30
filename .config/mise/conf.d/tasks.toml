@@ -1,3 +1,11 @@
 [tasks.dev]
 description = "Install development dependencies"
 run = "uv sync -U --dev --all-extras --all-groups"
+
+[tasks.build-stl]
+description = "Clone + build the ITU-T STL reference binaries (filter, firdemo, basop_test)"
+run = "python -u scripts/build_stl_reference.py"
+
+[tasks.clone-stl]
+description = "Clone the ITU-T STL reference source (no build)"
+run = "bash scripts/clone_stl.sh"

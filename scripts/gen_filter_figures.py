@@ -1,19 +1,47 @@
 """Generate frequency response SVG figures for ITU-T G.191 filters using the xy package.
 
 Saves figures directly into docs/assets/figures/.
+
+Styling: light-gray card background (readable on the docs' dark mode), enlarged
+fonts, thicker lines, and `tight_layout()` on every figure.
 """
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
+
 import numpy as np
-import xy
+import xy.pyplot as plt
 
 import g191_filter as g191
 
 OUT_DIR = Path("docs/assets/figures")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Figure card background: light gray stays readable on both light and dark pages.
+BG = "#f4f4f5"
+
+plt.rcParams.update({
+    # Fonts
+    "font.size": 13,
+    "axes.titlesize": 16,
+    "axes.labelsize": 14,
+    "legend.fontsize": 12,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    # Backgrounds
+    "figure.facecolor": BG,
+    "axes.facecolor": BG,
+    # Ink
+    "axes.edgecolor": "#71717a",
+    "axes.labelcolor": "#27272a",
+    "text.color": "#27272a",
+    "xtick.color": "#3f3f46",
+    "ytick.color": "#3f3f46",
+    "grid.color": "#d4d4d8",
+    # Lines
+    "lines.linewidth": 2.5,
+})
 
 # List of all 20 individual filters with their native parameters and visual styling
 INDIVIDUAL_FILTERS = [
@@ -185,56 +213,64 @@ INDIVIDUAL_FILTERS = [
 ]
 
 
+def _response(fid: str, n: int, sr: int, f_min: float) -> tuple[np.ndarray, np.ndarray]:
+    """Frequency response masked to [f_min, Nyquist]."""
+    w, mag = g191.get_frequency_response(fid, n, sr)
+    mask = (w >= f_min) & (w <= sr / 2.0)
+    return w[mask], mag[mask]
+
+
+def _finalize(fig: plt.Figure, path: Path) -> None:
+    fig.tight_layout()
+    fig.savefig(path)
+    print(f"Generated {path}")
+
+
 def generate_single_charts() -> None:
     for item in INDIVIDUAL_FILTERS:
         fid = item["id"]
         sr = item["sr"]
-        title = item["title"]
-        color = item["color"]
         f_min = item["f_min"]
-        y_domain = item["y_domain"]
+        w_p, mag_p = _response(fid, 2048, sr, f_min)
 
-        w, mag = g191.get_frequency_response(fid, 2048, sr)
-        mask = (w >= f_min) & (w <= sr / 2.0)
-        w_p = w[mask]
-        mag_p = mag[mask]
-
-        chart = xy.line_chart(
-            xy.line(w_p, mag_p, name=fid, color=color, width=2.0),
-            xy.x_axis(label="Frequency (Hz)", type_="log", domain=(f_min, sr / 2.0)),
-            xy.y_axis(label="Magnitude (dB)", domain=y_domain),
-            title=title,
-            width=720,
-            height=380,
+        fig, ax = plt.subplots(figsize=(7.2, 3.8))
+        ax.semilogx(w_p, mag_p, color=item["color"])
+        ax.set(
+            xlabel="Frequency (Hz)",
+            ylabel="Magnitude (dB)",
+            title=item["title"],
+            xlim=(f_min, sr / 2.0),
+            ylim=item["y_domain"],
         )
-        out_path = OUT_DIR / f"{fid}.svg"
-        xy.write_images([chart], [str(out_path)])
-        print(f"Generated {out_path}")
+        ax.grid(True, which="both", alpha=0.4)
+        _finalize(fig, OUT_DIR / f"{fid}.svg")
 
 
 def generate_group_charts() -> None:
     # 1. IRS Family Comparison
-    w1, m1 = g191.get_frequency_response("irs8khz", 2048, 8000)
-    w2, m2 = g191.get_frequency_response("irs16khz", 2048, 16000)
-    w3, m3 = g191.get_frequency_response("mod_irs16khz", 2048, 16000)
-    w4, m4 = g191.get_frequency_response("mod_irs48khz", 2048, 48000)
-
-    irs_chart = xy.line_chart(
-        xy.line(w1[w1 >= 50], m1[w1 >= 50], name="IRS 8 kHz", color="#2563eb", width=2.0),
-        xy.line(w2[w2 >= 50], m2[w2 >= 50], name="IRS 16 kHz", color="#0284c7", width=2.0),
-        xy.line(w3[w3 >= 50], m3[w3 >= 50], name="Mod IRS 16 kHz", color="#f59e0b", width=2.0),
-        xy.line(w4[w4 >= 50], m4[w4 >= 50], name="Mod IRS 48 kHz", color="#ef4444", width=2.0),
-        xy.x_axis(label="Frequency (Hz)", type_="log", domain=(50, 24000)),
-        xy.y_axis(label="Magnitude (dB)", domain=(-60, 10)),
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    for fid, sr, lbl, col in [
+        ("irs8khz", 8000, "IRS 8 kHz", "#2563eb"),
+        ("irs16khz", 16000, "IRS 16 kHz", "#0284c7"),
+        ("mod_irs16khz", 16000, "Mod IRS 16 kHz", "#f59e0b"),
+        ("mod_irs48khz", 48000, "Mod IRS 48 kHz", "#ef4444"),
+    ]:
+        w, m = _response(fid, 2048, sr, 50)
+        ax.semilogx(w, m, color=col, label=lbl)
+    ax.set(
+        xlabel="Frequency (Hz)",
+        ylabel="Magnitude (dB)",
         title="Intermediate Reference System (IRS) Filter Family",
-        width=740,
-        height=420,
+        xlim=(50, 24000),
+        ylim=(-60, 10),
     )
-    xy.write_images([irs_chart], [str(OUT_DIR / "irs_family.svg")])
-    print(f"Generated {OUT_DIR / 'irs_family.svg'}")
+    ax.grid(True, which="both", alpha=0.4)
+    ax.legend()
+    _finalize(fig, OUT_DIR / "irs_family.svg")
 
     # 2. 48 kHz Low-Pass FIR Family Comparison
-    lp_filters = [
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    for fid, lbl, col in [
         ("lp1p5_48khz", "LP 1.5 kHz", "#0284c7"),
         ("lp35_48khz", "LP 3.5 kHz", "#10b981"),
         ("lp7_48khz", "LP 7.0 kHz", "#f59e0b"),
@@ -242,70 +278,60 @@ def generate_group_charts() -> None:
         ("lp12_48khz", "LP 12.0 kHz", "#8b5cf6"),
         ("lp14_48khz", "LP 14.0 kHz", "#ec4899"),
         ("lp20_48khz", "LP 20.0 kHz", "#64748b"),
-    ]
-    lp_lines = []
-    for fid, lbl, col in lp_filters:
-        w, m = g191.get_frequency_response(fid, 2048, 48000)
-        mask = w >= 50
-        lp_lines.append(xy.line(w[mask], m[mask], name=lbl, color=col, width=1.8))
-
-    lp_chart = xy.line_chart(
-        *lp_lines,
-        xy.x_axis(label="Frequency (Hz)", type_="log", domain=(50, 24000)),
-        xy.y_axis(label="Magnitude (dB)", domain=(-100, 15)),
+    ]:
+        w, m = _response(fid, 2048, 48000, 50)
+        ax.semilogx(w, m, color=col, label=lbl)
+    ax.set(
+        xlabel="Frequency (Hz)",
+        ylabel="Magnitude (dB)",
         title="G.191 48 kHz Low-Pass Filter Suite",
-        width=740,
-        height=420,
+        xlim=(50, 24000),
+        ylim=(-100, 15),
     )
-    xy.write_images([lp_chart], [str(OUT_DIR / "lp_48k_family.svg")])
-    print(f"Generated {OUT_DIR / 'lp_48k_family.svg'}")
+    ax.grid(True, which="both", alpha=0.4)
+    ax.legend()
+    _finalize(fig, OUT_DIR / "lp_48k_family.svg")
 
     # 3. Resampling & Rate-Change Filters Comparison
-    resamp_filters = [
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    for fid, sr, lbl, col in [
         ("hq_down_2_to_1", 16000, "HQ Down 2:1 FIR (16 kHz)", "#0284c7"),
         ("hq_down_3_to_1", 16000, "HQ Down 3:1 FIR (16 kHz)", "#0ea5e9"),
         ("iir_down_3_to_1", 16000, "IIR Down 3:1 (16 kHz)", "#f59e0b"),
         ("iir_casc_lp_3_to_1", 48000, "IIR Casc LP 3:1 (48 kHz)", "#8b5cf6"),
-    ]
-    resamp_lines = []
-    for fid, sr, lbl, col in resamp_filters:
-        w, m = g191.get_frequency_response(fid, 2048, sr)
-        mask = (w >= 50) & (w <= sr / 2.0)
-        resamp_lines.append(xy.line(w[mask], m[mask], name=lbl, color=col, width=1.8))
-
-    resamp_chart = xy.line_chart(
-        *resamp_lines,
-        xy.x_axis(label="Frequency (Hz)", type_="log", domain=(50, 24000)),
-        xy.y_axis(label="Magnitude (dB)", domain=(-120, 10)),
+    ]:
+        w, m = _response(fid, 2048, sr, 50)
+        ax.semilogx(w, m, color=col, label=lbl)
+    ax.set(
+        xlabel="Frequency (Hz)",
+        ylabel="Magnitude (dB)",
         title="G.191 Rate-Conversion & Resampling Filters",
-        width=740,
-        height=420,
+        xlim=(50, 24000),
+        ylim=(-120, 10),
     )
-    xy.write_images([resamp_chart], [str(OUT_DIR / "resampling_family.svg")])
-    print(f"Generated {OUT_DIR / 'resampling_family.svg'}")
+    ax.grid(True, which="both", alpha=0.4)
+    ax.legend()
+    _finalize(fig, OUT_DIR / "resampling_family.svg")
 
     # 4. Telecom & Processing Filters (G.712, DC Removal, Flat Band-Pass)
-    tele_filters = [
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    for fid, sr, lbl, col in [
         ("flat_band_pass", 8000, "Flat Band-Pass (0.3-3.4 kHz)", "#0d9488"),
         ("g712_8khz", 8000, "G.712 PCM Filter", "#8b5cf6"),
         ("dir_dc_removal", 8000, "DC Removal HP", "#ec4899"),
-    ]
-    tele_lines = []
-    for fid, sr, lbl, col in tele_filters:
-        w, m = g191.get_frequency_response(fid, 2048, sr)
-        mask = (w >= 10) & (w <= sr / 2.0)
-        tele_lines.append(xy.line(w[mask], m[mask], name=lbl, color=col, width=2.0))
-
-    tele_chart = xy.line_chart(
-        *tele_lines,
-        xy.x_axis(label="Frequency (Hz)", type_="log", domain=(10, 4000)),
-        xy.y_axis(label="Magnitude (dB)", domain=(-60, 20)),
+    ]:
+        w, m = _response(fid, 2048, sr, 10)
+        ax.semilogx(w, m, color=col, label=lbl)
+    ax.set(
+        xlabel="Frequency (Hz)",
+        ylabel="Magnitude (dB)",
         title="G.191 Telecom & Conditioning Filters (8 kHz)",
-        width=740,
-        height=420,
+        xlim=(10, 4000),
+        ylim=(-60, 20),
     )
-    xy.write_images([tele_chart], [str(OUT_DIR / "telecom_family.svg")])
-    print(f"Generated {OUT_DIR / 'telecom_family.svg'}")
+    ax.grid(True, which="both", alpha=0.4)
+    ax.legend()
+    _finalize(fig, OUT_DIR / "telecom_family.svg")
 
 
 def main() -> None:
@@ -313,7 +339,7 @@ def main() -> None:
     generate_single_charts()
     print("Generating family comparison charts...")
     generate_group_charts()
-    print("All figures successfully created in docs/assets/figures/")
+    print(f"All figures successfully created in {OUT_DIR}/")
 
 
 if __name__ == "__main__":

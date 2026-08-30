@@ -93,11 +93,11 @@ Detailed frequency response curves, coefficient specifications, and parameter re
 
 Full guides and references:
 
-- [Filter Catalog & Specifications](docs/reference/filters.md)
-- [One-Shot & Batch Filtering Guide](docs/guides/one_shot_filtering.md)
-- [Blockwise & Streaming Filtering Guide](docs/guides/blockwise_filtering.md)
-- [API Reference](docs/reference/api.md)
-- [Development & Contributing](docs/development.md)
+- [Filter Catalog & Specifications](https://jr2804.github.io/g191-filter/reference/filters/)
+- [One-Shot & Batch Filtering Guide](https://jr2804.github.io/g191-filter/guides/one_shot_filtering/)
+- [Blockwise & Streaming Filtering Guide](https://jr2804.github.io/g191-filter/guides/blockwise_filtering/)
+- [API Reference](https://jr2804.github.io/g191-filter/reference/api/)
+- [Development & Contributing](https://jr2804.github.io/g191-filter/development/)
 
 ---
 

@@ -2,7 +2,7 @@
 site_name = "ITU-T G.191 FIR/IIR signal filters"
 site_description = "IIR/FIR filters according to Recommendation ITU-T G.191 (Software Tool Library). Provided at arbitrary sampling rates and in many formats"
 site_author = "Jan.Reimes"
-site_url = "https://github.com/jr2804/g191-filter"
+site_url = "https://jr2804.github.io/g191-filter"
 repo_url = "https://github.com/jr2804/g191-filter"
 repo_name = "g191-filter"
 copyright = "Copyright &copy; 2026 Jan.Reimes"

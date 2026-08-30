@@ -130,7 +130,7 @@ fn filter_array<'py>(
         }
     };
 
-    Ok(PyArray1::from_vec_bound(py, filtered))
+    Ok(PyArray1::from_vec(py, filtered))
 }
 
 /// Python class for blockwise (streaming) filtering.
@@ -171,7 +171,7 @@ impl BlockwiseFilterPy {
     ) -> PyResult<Bound<'py, PyArray1<f64>>> {
         let input = input_array.as_array().to_vec();
         let y = self.inner.process_block(&input);
-        Ok(PyArray1::from_vec_bound(py, y))
+        Ok(PyArray1::from_vec(py, y))
     }
 
     /// Process the entire input using chunked processing (streaming).
@@ -188,7 +188,7 @@ impl BlockwiseFilterPy {
     #[getter]
     fn state<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray1<f64>>> {
         let s = self.inner.get_state();
-        Ok(PyArray1::from_vec_bound(py, s.to_vec()))
+        Ok(PyArray1::from_vec(py, s.to_vec()))
     }
 
     /// Restore a previously snapshotted state.
@@ -342,7 +342,7 @@ fn get_filter_info_py<'a>(py: Python<'a>, filter_id: &str) -> PyResult<Py<PyDict
     let info = filter_info(fid)
         .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
 
-    let dict = PyDict::new_bound(py);
+    let dict = PyDict::new(py);
     dict.set_item("id", info.id.to_string())?;
     dict.set_item("type", match info.filter_type {
         FilterType::Fir => "fir",
@@ -403,7 +403,7 @@ fn get_frequency_response<'py>(
         mags.push(20.0 * mag.log10().max(-200.0));
     }
 
-    Ok((PyArray1::from_vec_bound(py, freqs), PyArray1::from_vec_bound(py, mags)))
+    Ok((PyArray1::from_vec(py, freqs), PyArray1::from_vec(py, mags)))
 }
 
 fn read_wav(path: &str) -> PyResult<(Vec<f64>, f64, hound::SampleFormat, u16)> {

@@ -68,23 +68,27 @@ def _cmake_build(build_dir: Path) -> None:
 
 
 def _copy_binaries(build_dir: Path) -> None:
-    """Copy built STL binaries to the project root."""
-    bin_dir = build_dir / "bin" / "Debug"
+    """Copy built STL binaries to the project root.
+
+    CMake uses bin/Debug on MSVC/Xcode multi-config generators and bin/
+    on single-config generators (Unix Makefiles, Ninja). Probe both.
+    """
     dest = BASE_DIR
     suffix = ".exe" if sys.platform == "win32" else ""
+    candidates = [build_dir / "bin" / "Debug", build_dir / "bin"]
     for base in ("filter", "firdemo"):
         exe = base + suffix
-        src = bin_dir / exe
-        if src.exists():
-            dest_path = dest / exe
-            if dest_path.exists() and dest_path.stat().st_size >= src.stat().st_size:
-                print(f"  {exe} already up to date")
-            else:
-                import shutil
-                shutil.copy2(src, dest_path)
-                print(f"  copied {exe}")
+        src = next((d / exe for d in candidates if (d / exe).exists()), None)
+        if src is None:
+            print(f"  WARNING: {exe} not found in {candidates}")
+            continue
+        dest_path = dest / exe
+        if dest_path.exists() and dest_path.stat().st_size >= src.stat().st_size:
+            print(f"  {exe} already up to date")
         else:
-            print(f"  WARNING: {exe} not found in {bin_dir}")
+            import shutil
+            shutil.copy2(src, dest_path)
+            print(f"  copied {exe} from {src}")
 
 
 if __name__ == "__main__":

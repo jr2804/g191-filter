@@ -19,9 +19,20 @@ from g191_filter import filter_array
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 STL_DIR = BASE_DIR / "tmp" / "_stl_extract"
-BUILD_BIN_DIR = STL_DIR / "build" / "bin" / "Debug"
 _EXE = ".exe" if sys.platform == "win32" else ""
-FILTER_BIN_FILE = BUILD_BIN_DIR / ("filter" + _EXE)
+
+
+def _filter_candidates() -> list[Path]:
+    """Candidate locations for the built filter binary.
+
+    CMake puts outputs into bin/Debug on MSVC/Xcode and into bin/
+    on single-config generators (Unix Makefiles, Ninja).
+    """
+    b = STL_DIR / "build" / "bin"
+    return [b / "Debug" / ("filter" + _EXE), b / ("filter" + _EXE)]
+
+
+FILTER_BIN_FILE = _filter_candidates()[0]
 TEST_DATA_FILE = STL_DIR / "src" / "fir" / "test_data" / "test.src"
 
 # Filter pairs where the STL reference produces the same output length
@@ -40,30 +51,39 @@ STL_FILTERS = [
 # Fixtures
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(scope="session")
-def stl_bin_file() -> Path:
-    """Ensure the STL reference binary exists; clone + build if not."""
-    if FILTER_BIN_FILE.exists():
-        return FILTER_BIN_FILE
-
+def _build_stl() -> None:
+    """Clone + build the STL reference using the project's build script."""
     script = BASE_DIR / "scripts" / "build_stl_reference.py"
     cp = subprocess.run(  # noqa: S603
         [sys.executable, "-u", str(script)], capture_output=True, text=True, check=False
     )
     if cp.returncode != 0:
         pytest.fail(f"STL reference build failed:\n{cp.stdout}\n{cp.stderr}")
-    if not FILTER_BIN_FILE.exists():
-        pytest.fail(f"filter binary not found after build at {FILTER_BIN_FILE}")
-    return FILTER_BIN_FILE
+
+
+@pytest.fixture(scope="session")
+def stl_bin_file() -> Path:
+    """Ensure the STL reference binary exists; clone + build if not."""
+    # Try the cached binary first.
+    for candidate in _filter_candidates():
+        if candidate.exists():
+            return candidate
+    if not STL_DIR.exists():
+        _build_stl()
+    for candidate in _filter_candidates():
+        if candidate.exists():
+            return candidate
+    pytest.fail(f"filter binary not found after build at {_filter_candidates()}")
 
 
 @pytest.fixture(scope="session")
 def openitu_test_runner_file() -> Path:
-    """Return the openitu STL test runner (basop_test.exe)."""
-    runner = BUILD_BIN_DIR / ("basop_test" + _EXE)
-    if not runner.exists():
-        pytest.skip(f"openitu basop_test not found at {runner} — run CMake build first")
-    return runner
+    """Return the openitu STL test runner (basop_test)."""
+    for candidate in (_filter_candidates()[0].parent / ("basop_test" + _EXE),
+                      _filter_candidates()[1].parent / ("basop_test" + _EXE)):
+        if candidate.exists():
+            return candidate
+    pytest.skip("openitu basop_test not found — run CMake build first")
 
 
 @pytest.fixture(scope="session")
@@ -84,7 +104,7 @@ def _run_stl_filter(
     """Run the STL reference filter.exe and return int16 output."""
     out_path = BASE_DIR / "tmp" / "_stl_verify_out.bin"
     cmd = [str(bin_path), "-q", filter_type, str(in_path), str(out_path), str(block_size)]
-    cp = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603,S607
+    cp = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
     if cp.returncode != 0:
         return None
 
@@ -132,11 +152,10 @@ def test_rust_matches_stl_int16(
 
 def test_openitu_sanity(openitu_test_runner_file: Path) -> None:
     """Run openitu STL sanity tests (Test_type=0); must pass."""
-    cp = subprocess.run(  # noqa: S602,S603,S607
+    cp = subprocess.run(  # noqa: S603
         [str(openitu_test_runner_file), "Test_type=0"],
         capture_output=True, text=True, check=True,
         cwd=str(STL_DIR / "src" / "basop" / "test_framework" / "test_data"),
-        shell=True,
     )
     assert cp.returncode == 0, (
         f"openitu sanity tests failed (exit {cp.returncode}):\n{cp.stdout}\n{cp.stderr}"
@@ -145,11 +164,10 @@ def test_openitu_sanity(openitu_test_runner_file: Path) -> None:
 
 def test_openitu_precision(openitu_test_runner_file: Path) -> None:
     """Run openitu STL precision tests (Test_type=1); must pass."""
-    cp = subprocess.run(  # noqa: S602,S603,S607
+    cp = subprocess.run(  # noqa: S603
         [str(openitu_test_runner_file), "Test_type=1"],
         capture_output=True, text=True, check=True,
         cwd=str(STL_DIR / "src" / "basop" / "test_framework" / "test_data"),
-        shell=True,
     )
     assert cp.returncode == 0, (
         f"openitu precision tests failed (exit {cp.returncode}):\n{cp.stdout}\n{cp.stderr}"

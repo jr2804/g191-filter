@@ -32,7 +32,7 @@ python -m pytest tests/
 - `scripts/clone_stl.sh` — clones only (no build)
 
 The `filter.exe` comparison is limited to filters whose C reference produces
-the same output length as the Rust core: **IRS8, IRS16, HQ2, HQ3**.  Other
+the same output length as the Rust core: **IRS8, IRS16, HQ2, HQ3**. Other
 filters (PCM, FLAT, DC) decimate internally in the C reference but keep the
 native sample rate in the Rust API, so they are skipped.
 

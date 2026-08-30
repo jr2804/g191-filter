@@ -178,9 +178,11 @@ summary = true
 unwrap_annotated = true
 
 # ----------------------------------------------------------------------------
-# Extra JavaScript (mermaid.js for client-side diagram rendering)
+# Extra JavaScript (mermaid.js for client-side diagram rendering, MathJax for math)
 # ----------------------------------------------------------------------------
 [[project.extra_javascript]]
 path = "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"
+[[project.extra_javascript]]
+path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
 [[project.extra_javascript]]
 path = "assets/javascripts/mermaid-init.js"

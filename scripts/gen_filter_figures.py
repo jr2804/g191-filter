@@ -8,6 +8,7 @@ fonts, thicker lines, and `tight_layout()` on every figure.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import numpy as np
@@ -233,6 +234,13 @@ def _response(fid: str, n: int, sr: int, f_min: float) -> tuple[np.ndarray, np.n
     return w[mask], mag[mask]
 
 
+def _dc_gain_db(fid: str) -> float:
+    """DC gain in dB = 20*log10(|sum(b)|) for a (typically FIR) filter."""
+    b, _a = g191.get_coefficients_ba_py(fid)
+    s = abs(sum(b))
+    return 20 * math.log10(s) if s > 0 else 0.0
+
+
 def _finalize(fig: plt.Figure, path: Path) -> None:
     fig.tight_layout()
     fig.savefig(path)
@@ -295,12 +303,16 @@ def generate_group_charts() -> None:
         ("lp20_48khz", "LP 20.0 kHz", "#64748b"),
     ]:
         w, m = _response(fid, 2048, 48000, 50)
+        # STL LP filters have non-unity DC gain by design; normalize so the
+        # family chart shows passband shape around 0 dB. Individual charts
+        # plot the unnormalized (true) response.
+        m = m - _dc_gain_db(fid)
         ax.semilogx(w, m, color=col, label=lbl)
     ax.set(
-        ylabel="Magnitude (dB)",
-        title="G.191 48 kHz Low-Pass Filter Suite",
+        ylabel="Magnitude (dB, normalized to DC)",
+        title="G.191 48 kHz Low-Pass Filter Suite (normalized to 0 dB DC)",
         xlim=(50, 24000),
-        ylim=(-100, 15),
+        ylim=(-100, 5),
     )
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)

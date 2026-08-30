@@ -88,6 +88,14 @@ response curves of telephone handsets. They are indispensable for speech quality
 
 A family of linear-phase FIR low-pass filters designed for bandwidth limiting, anti-aliasing, and anti-imaging filtering at a standard 48 kHz sampling rate.
 
+!!! note "Passband gain is not 0 dB"
+    The G.191 LP suite is implemented as-designed from the STL reference: the
+    filter coefficients sum to ≈ 1.5–1.9 (DC gain ≈ +3.5 … +5.5 dB). This is
+    **not** an implementation bug — it is the published STL filter response.
+    The family chart below is **normalized to 0 dB DC** so the passband
+    ripple and transition shape are easy to compare across cutoffs. The
+    individual filter plots show the *true* (unnormalized) response.
+
 #### Family Response
 
 <p align="center">

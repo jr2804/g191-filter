@@ -50,7 +50,7 @@ def _cmake_configure(build_dir: Path) -> None:
         [
             "cmake",
             "..",
-            "-DCMAKE_C_COMPILER=zig",
+            "-DCMAKE_C_COMPILER=zig;cc",
             "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
         ],
         cwd=str(build_dir),

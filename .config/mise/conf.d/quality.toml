@@ -1,6 +1,8 @@
 [tasks.test]
 description = "Run tests with coverage"
-run = "uv run pytest --cov=g191_filter"
+# --no-sync: uv run would re-sync and replace the maturin-built package
+# (with _native) by the hatchling-built one (without it) — see #550.
+run = "uv run --no-sync pytest --cov=g191_filter"
 sources = ["src/**/*.py", "tests/**/*.py"]
 outputs = ["htmlcov/", ".coverage"]
 

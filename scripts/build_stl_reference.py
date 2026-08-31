@@ -11,6 +11,7 @@ Artifacts produced:
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -38,19 +39,23 @@ def main() -> None:
 def _clone() -> None:
     print(f"Cloning STL reference from {GIT_URL} branch {BRANCH} ...")
     os.makedirs(str(STL_DIR.parent), exist_ok=True)
-    subprocess.run(
-        ["git", "clone", "-b", BRANCH, "--depth", "1", GIT_URL, str(STL_DIR)],
+    subprocess.run(  # noqa: S603
+        ["git", "clone", "-b", BRANCH, "--depth", "1", GIT_URL, str(STL_DIR)],  # noqa: S603,S607
         check=True,
     )
 
 
 def _cmake_configure(build_dir: Path) -> None:
     print(f"Configuring CMake in {build_dir} ...")
-    subprocess.run(
-        [
+    # Prefer the platform C compiler; fall back to zig cc (needed on hosts
+    # without a native toolchain, e.g. Windows without MSVC).
+    cc = shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
+    compiler_args = [f"-DCMAKE_C_COMPILER={cc}"] if cc else ["-DCMAKE_C_COMPILER=zig;cc"]
+    subprocess.run(  # noqa: S603
+        [  # noqa: S607
             "cmake",
             "..",
-            "-DCMAKE_C_COMPILER=zig;cc",
+            *compiler_args,
             "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
         ],
         cwd=str(build_dir),
@@ -59,9 +64,9 @@ def _cmake_configure(build_dir: Path) -> None:
 
 
 def _cmake_build(build_dir: Path) -> None:
-    print(f"Building STL binaries ...")
+    print("Building STL binaries ...")
     subprocess.run(
-        ["cmake", "--build", ".", "-j2"],
+        ["cmake", "--build", ".", "-j2"],  # noqa: S603,S607
         cwd=str(build_dir),
         check=True,
     )
@@ -86,7 +91,6 @@ def _copy_binaries(build_dir: Path) -> None:
         if dest_path.exists() and dest_path.stat().st_size >= src.stat().st_size:
             print(f"  {exe} already up to date")
         else:
-            import shutil
             shutil.copy2(src, dest_path)
             print(f"  copied {exe} from {src}")
 

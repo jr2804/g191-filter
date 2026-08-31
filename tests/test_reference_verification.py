@@ -154,7 +154,7 @@ def test_openitu_sanity(openitu_test_runner_file: Path) -> None:
     """Run openitu STL sanity tests (Test_type=0); must pass."""
     cp = subprocess.run(  # noqa: S603
         [str(openitu_test_runner_file), "Test_type=0"],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, check=False,
         cwd=str(STL_DIR / "src" / "basop" / "test_framework" / "test_data"),
     )
     assert cp.returncode == 0, (
@@ -166,7 +166,7 @@ def test_openitu_precision(openitu_test_runner_file: Path) -> None:
     """Run openitu STL precision tests (Test_type=1); must pass."""
     cp = subprocess.run(  # noqa: S603
         [str(openitu_test_runner_file), "Test_type=1"],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, check=False,
         cwd=str(STL_DIR / "src" / "basop" / "test_framework" / "test_data"),
     )
     assert cp.returncode == 0, (

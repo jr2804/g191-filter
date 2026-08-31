@@ -85,7 +85,7 @@ filter_wave("lp7_48khz", "input_48k.wav", output_file="output_lp7.wav")
 | **Resampling** | `hq_down_2_to_1`, `hq_down_3_to_1`, `iir_down_3_to_1`, `iir_up_1_to_3`, `iir_casc_lp_3_to_1`, `iir_casc_lp_1_to_3` | Decimation & interpolation filters with integrated rate change | 16 / 48 kHz |
 | **Telecom & DC** | `flat_band_pass`, `g712_8khz`, `dir_dc_removal` | Flat 300–3400 Hz bandpass, G.712 PCM channel filter, and DC block | 8 kHz |
 
-Detailed frequency response curves, coefficient specifications, and parameter references are available in the [Documentation](docs/index.md).
+Detailed frequency response curves, coefficient specifications, and parameter references are available in the [Documentation](https://jr2804.github.io/g191-filter/).
 
 ---
 

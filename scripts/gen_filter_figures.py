@@ -270,15 +270,17 @@ def generate_single_charts() -> None:
 
 def generate_group_charts() -> None:
     # 1. IRS Family Comparison
+    # Okabe-Ito colorblind-safe palette; linestyle redundancy so hue is
+    # never the only channel separating series.
     fig, ax = plt.subplots(figsize=(7.4, 4.2))
-    for fid, sr, lbl, col in [
-        ("irs8khz", 8000, "IRS 8 kHz", "#2563eb"),
-        ("irs16khz", 16000, "IRS 16 kHz", "#0284c7"),
-        ("mod_irs16khz", 16000, "Mod IRS 16 kHz", "#f59e0b"),
-        ("mod_irs48khz", 48000, "Mod IRS 48 kHz", "#ef4444"),
+    for fid, sr, lbl, col, ls in [
+        ("irs8khz", 8000, "IRS 8 kHz", "#0072B2", "-"),
+        ("irs16khz", 16000, "IRS 16 kHz", "#56B4E9", "--"),
+        ("mod_irs16khz", 16000, "Mod IRS 16 kHz", "#E69F00", "-."),
+        ("mod_irs48khz", 48000, "Mod IRS 48 kHz", "#D55E00", (0, (3, 1, 1, 1))),
     ]:
         w, m = _response(fid, 2048, sr, 50)
-        ax.semilogx(w, m, color=col, label=lbl)
+        ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
     ax.set(
         ylabel="Magnitude (dB)",
         title="Intermediate Reference System (IRS) Filter Family",
@@ -293,21 +295,21 @@ def generate_group_charts() -> None:
 
     # 2. 48 kHz Low-Pass FIR Family Comparison
     fig, ax = plt.subplots(figsize=(7.4, 4.2))
-    for fid, lbl, col in [
-        ("lp1p5_48khz", "LP 1.5 kHz", "#0284c7"),
-        ("lp35_48khz", "LP 3.5 kHz", "#10b981"),
-        ("lp7_48khz", "LP 7.0 kHz", "#f59e0b"),
-        ("lp10_48khz", "LP 10.0 kHz", "#ef4444"),
-        ("lp12_48khz", "LP 12.0 kHz", "#8b5cf6"),
-        ("lp14_48khz", "LP 14.0 kHz", "#ec4899"),
-        ("lp20_48khz", "LP 20.0 kHz", "#64748b"),
+    for fid, lbl, col, ls in [
+        ("lp1p5_48khz", "LP 1.5 kHz", "#0072B2", "-"),
+        ("lp35_48khz", "LP 3.5 kHz", "#D55E00", "--"),
+        ("lp7_48khz", "LP 7.0 kHz", "#009E73", "-."),
+        ("lp10_48khz", "LP 10.0 kHz", "#CC79A7", (0, (3, 1, 1, 1))),
+        ("lp12_48khz", "LP 12.0 kHz", "#56B4E9", (0, (5, 2))),
+        ("lp14_48khz", "LP 14.0 kHz", "#E69F00", (0, (1, 1))),
+        ("lp20_48khz", "LP 20.0 kHz", "#000000", (0, (5, 1, 1, 1))),
     ]:
         w, m = _response(fid, 2048, 48000, 50)
         # STL LP filters have non-unity DC gain by design; normalize so the
         # family chart shows passband shape around 0 dB. Individual charts
         # plot the unnormalized (true) response.
         m = m - _dc_gain_db(fid)
-        ax.semilogx(w, m, color=col, label=lbl)
+        ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
     ax.set(
         ylabel="Magnitude (dB, normalized to DC)",
         title="G.191 48 kHz Low-Pass Filter Suite (normalized to 0 dB DC)",
@@ -322,14 +324,14 @@ def generate_group_charts() -> None:
 
     # 3. Resampling & Rate-Change Filters Comparison
     fig, ax = plt.subplots(figsize=(7.4, 4.2))
-    for fid, sr, lbl, col in [
-        ("hq_down_2_to_1", 16000, "HQ Down 2:1 FIR (16 kHz)", "#0284c7"),
-        ("hq_down_3_to_1", 16000, "HQ Down 3:1 FIR (16 kHz)", "#0ea5e9"),
-        ("iir_down_3_to_1", 16000, "IIR Down 3:1 (16 kHz)", "#f59e0b"),
-        ("iir_casc_lp_3_to_1", 48000, "IIR Casc LP 3:1 (48 kHz)", "#8b5cf6"),
+    for fid, sr, lbl, col, ls in [
+        ("hq_down_2_to_1", 16000, "HQ Down 2:1 FIR (16 kHz)", "#0072B2", "-"),
+        ("hq_down_3_to_1", 16000, "HQ Down 3:1 FIR (16 kHz)", "#56B4E9", "--"),
+        ("iir_down_3_to_1", 16000, "IIR Down 3:1 (16 kHz)", "#E69F00", "-."),
+        ("iir_casc_lp_3_to_1", 48000, "IIR Casc LP 3:1 (48 kHz)", "#CC79A7", (0, (3, 1, 1, 1))),
     ]:
         w, m = _response(fid, 2048, sr, 50)
-        ax.semilogx(w, m, color=col, label=lbl)
+        ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
     ax.set(
         ylabel="Magnitude (dB)",
         title="G.191 Rate-Conversion & Resampling Filters",
@@ -344,13 +346,13 @@ def generate_group_charts() -> None:
 
     # 4. Telecom & Processing Filters (G.712, DC Removal, Flat Band-Pass)
     fig, ax = plt.subplots(figsize=(7.4, 4.2))
-    for fid, sr, lbl, col in [
-        ("flat_band_pass", 8000, "Flat Band-Pass (0.3-3.4 kHz)", "#0d9488"),
-        ("g712_8khz", 8000, "G.712 PCM Filter", "#8b5cf6"),
-        ("dir_dc_removal", 8000, "DC Removal HP", "#ec4899"),
+    for fid, sr, lbl, col, ls in [
+        ("flat_band_pass", 8000, "Flat Band-Pass (0.3-3.4 kHz)", "#009E73", "-"),
+        ("g712_8khz", 8000, "G.712 PCM Filter", "#0072B2", "--"),
+        ("dir_dc_removal", 8000, "DC Removal HP", "#D55E00", "-."),
     ]:
         w, m = _response(fid, 2048, sr, 10)
-        ax.semilogx(w, m, color=col, label=lbl)
+        ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
     ax.set(
         ylabel="Magnitude (dB)",
         title="G.191 Telecom & Conditioning Filters (8 kHz)",

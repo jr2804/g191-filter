@@ -5,6 +5,9 @@ Saves figures directly into docs/assets/figures/.
 Styling: light-gray card background (readable on the docs' dark mode), enlarged
 fonts, thicker lines, and `tight_layout()` on every figure.
 """
+# csort: off
+# Function definition order is narrative (helpers -> generate_* -> main) and
+# not meant to be reshuffled by structural sorters.
 
 from __future__ import annotations
 

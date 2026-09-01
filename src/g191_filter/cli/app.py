@@ -6,6 +6,8 @@ from importlib.metadata import version
 
 import typer
 
+from g191_filter.cli import commands
+
 app = typer.Typer(
     name="g191_filter",
     help="IIR/FIR filters according to Recommendation ITU-T G.191 (Software Tool Library). Provided at arbitrary sampling rates and in many formats",
@@ -13,6 +15,13 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+# Commands are plain functions in g191_filter.cli.commands; wiring them
+# here (after app exists) keeps the module free of circular imports, so
+# csort may freely reorder the imports section without breaking them.
+app.command()(commands.default)
+app.command()(commands.greet)
+app.command()(commands.filter)
+app.command()(commands.add)
 
 @app.callback(invoke_without_command=True)
 def _callback(
@@ -37,10 +46,6 @@ def _get_version() -> str:
         return version("g191_filter")
     except Exception:
         return "0.0.0"  # Fallback for development mode
-
-
-# Import commands to register them with app (after app exists)
-from g191_filter.cli import commands  # noqa: E402, F401
 
 
 def main() -> None:

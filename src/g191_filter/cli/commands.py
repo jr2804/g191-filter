@@ -6,15 +6,10 @@ import typer
 
 from g191_filter import filter_wave
 from g191_filter.cli import args
-from g191_filter.cli.app import app
-
-# Application name for environment variables
-APP_NAME_UPPERCASE = "G191_FILTER"
 
 # Default command (runs when no command provided)
 
 
-@app.command()
 def default() -> None:
     """Default command showing welcome message."""
     typer.echo("Welcome to ITU-T G.191 FIR/IIR signal filters!")
@@ -24,7 +19,6 @@ def default() -> None:
 # Greet command
 
 
-@app.command()
 def greet(
     name: args.NameArg,
     input_file: args.InputFileArg = None,
@@ -49,7 +43,6 @@ def greet(
 # Filter command
 
 
-@app.command()
 def filter(
     filter_id: args.FilterIdArg,
     input_file: args.InputWaveFile,
@@ -65,7 +58,6 @@ def filter(
 # Add command
 
 
-@app.command()
 def add(
     number1: args.NumberArg1,
     number2: args.NumberArg2,

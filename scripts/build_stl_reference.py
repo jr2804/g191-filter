@@ -22,25 +22,27 @@ GIT_URL = "https://github.com/openitu/STL.git"
 BRANCH = "STL2026_ITU-T_submission"
 
 
-def main() -> None:
-    if STL_DIR.exists():
-        print(f"STL extract already present at {STL_DIR}")
+def main(stl_dir: Path | None = None, out_dir: Path | None = None) -> None:
+    stl_dir = stl_dir or STL_DIR
+    out_dir = out_dir or BASE_DIR
+    if stl_dir.exists():
+        print(f"STL extract already present at {stl_dir}")
     else:
-        _clone()
+        _clone(stl_dir)
 
-    build_dir = STL_DIR / "build"
+    build_dir = stl_dir / "build"
     build_dir.mkdir(parents=True, exist_ok=True)
     _cmake_configure(build_dir)
     _cmake_build(build_dir)
-    _copy_binaries(build_dir)
+    _copy_binaries(build_dir, out_dir)
     print("STL reference build complete.")
 
 
-def _clone() -> None:
+def _clone(stl_dir: Path) -> None:
     print(f"Cloning STL reference from {GIT_URL} branch {BRANCH} ...")
-    os.makedirs(str(STL_DIR.parent), exist_ok=True)
+    os.makedirs(str(stl_dir.parent), exist_ok=True)
     subprocess.run(  # noqa: S603
-        ["git", "clone", "-b", BRANCH, "--depth", "1", GIT_URL, str(STL_DIR)],  # noqa: S603,S607
+        ["git", "clone", "-b", BRANCH, "--depth", "1", GIT_URL, str(stl_dir)],  # noqa: S603,S607
         check=True,
     )
 
@@ -72,13 +74,13 @@ def _cmake_build(build_dir: Path) -> None:
     )
 
 
-def _copy_binaries(build_dir: Path) -> None:
-    """Copy built STL binaries to the project root.
+def _copy_binaries(build_dir: Path, out_dir: Path) -> None:
+    """Copy built STL binaries to out_dir (default: project root).
 
     CMake uses bin/Debug on MSVC/Xcode multi-config generators and bin/
     on single-config generators (Unix Makefiles, Ninja). Probe both.
     """
-    dest = BASE_DIR
+    dest = out_dir
     suffix = ".exe" if sys.platform == "win32" else ""
     candidates = [build_dir / "bin" / "Debug", build_dir / "bin"]
     for base in ("filter", "firdemo"):
@@ -96,8 +98,16 @@ def _copy_binaries(build_dir: Path) -> None:
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Clone + build the ITU-T STL reference binaries")
+    parser.add_argument("--stl-dir", type=Path, default=STL_DIR,
+                        help="Directory for the STL clone+build (default: tmp/_stl_extract)")
+    parser.add_argument("--out-dir", type=Path, default=BASE_DIR,
+                        help="Directory to copy built binaries to (default: project root)")
+    args = parser.parse_args()
     try:
-        main()
+        main(stl_dir=args.stl_dir, out_dir=args.out_dir)
     except subprocess.CalledProcessError as exc:
         print(f"Build failed: {exc}", file=sys.stderr)
         sys.exit(1)

@@ -16,30 +16,6 @@ def default() -> None:
     typer.echo("Use --help to see available commands.")
 
 
-# Greet command
-
-
-def greet(
-    name: args.NameArg,
-    input_file: args.InputFileArg = None,
-    output_file: args.OutputFile = None,
-    cache: args.Cache = True,
-) -> None:
-    """Greet a person by name."""
-    if input_file:
-        # Read names from file
-        names = [line.strip() for line in input_file if line.strip()]
-        for n in names:
-            typer.echo(f"Hello, {n}!")
-    else:
-        typer.echo(f"Hello, {name}!")
-
-    # Show option values (for demonstration)
-    if output_file:
-        typer.echo(f"Output file: {output_file}")
-    typer.echo(f"Cache: {'enabled' if cache else 'disabled'}")
-
-
 # Filter command
 
 
@@ -53,21 +29,3 @@ def filter(
     out_path = output_file if output_file else input_file
     filter_wave(filter_id, input_file, output_file=out_path, block_size=block_size)
     typer.echo(f"Filtered {input_file} -> {out_path} with {filter_id} (block_size={block_size})")
-
-
-# Add command
-
-
-def add(
-    number1: args.NumberArg1,
-    number2: args.NumberArg2,
-    output_file: args.OutputFile = None,
-) -> None:
-    """Add two numbers together."""
-    result = number1 + number2
-    typer.echo(f"The sum of {number1} and {number2} is {result}")
-
-    if output_file:
-        with open(output_file, "w") as f:
-            f.write(str(result))
-        typer.echo(f"Result written to {output_file}")

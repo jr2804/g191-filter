@@ -19,9 +19,7 @@ app = typer.Typer(
 # here (after app exists) keeps the module free of circular imports, so
 # csort may freely reorder the imports section without breaking them.
 app.command()(commands.default)
-app.command()(commands.greet)
 app.command()(commands.filter)
-app.command()(commands.add)
 
 @app.callback(invoke_without_command=True)
 def _callback(

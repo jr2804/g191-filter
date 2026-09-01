@@ -19,7 +19,8 @@ import xy.pyplot as plt
 
 import g191_filter as g191
 
-OUT_DIR = Path("docs/assets/figures")
+# Absolute path: safe regardless of the working directory the script is run from.
+OUT_DIR = Path(__file__).resolve().parent.parent / "docs" / "assets" / "figures"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Figure card background: light gray stays readable on both light and dark pages.
@@ -222,32 +223,12 @@ INDIVIDUAL_FILTERS = [
 _FREQ_TICKS = [20, 100, 500, 1000, 4000, 8000, 16000, 20000]
 
 
-def _apply_freq_ticks(ax: plt.Axes, sr: int) -> None:
-    """Set manual Hz tick labels (1k instead of 10^3), capped below Nyquist."""
-    lo = ax.get_xlim()[0]
-    ticks = [t for t in _FREQ_TICKS if lo <= t < sr / 2.0]
-    ax.set_xticks(ticks)
-    ax.set_xticklabels([f"{t / 1000:g}k" if t >= 1000 else f"{t:g}" for t in ticks], rotation=30)
-
-
-def _response(fid: str, n: int, sr: int, f_min: float) -> tuple[np.ndarray, np.ndarray]:
-    """Frequency response masked to [f_min, Nyquist]."""
-    w, mag = g191.get_frequency_response(fid, n, sr)
-    mask = (w >= f_min) & (w <= sr / 2.0)
-    return w[mask], mag[mask]
-
-
-def _dc_gain_db(fid: str) -> float:
-    """DC gain in dB = 20*log10(|sum(b)|) for a (typically FIR) filter."""
-    b, _a = g191.get_coefficients_ba_py(fid)
-    s = abs(sum(b))
-    return 20 * math.log10(s) if s > 0 else 0.0
-
-
-def _finalize(fig: plt.Figure, path: Path) -> None:
-    fig.tight_layout()
-    fig.savefig(path)
-    print(f"Generated {path}")
+def main() -> None:
+    print("Generating individual filter response charts...")
+    generate_single_charts()
+    print("Generating family comparison charts...")
+    generate_group_charts()
+    print(f"All figures successfully created in {OUT_DIR}/")
 
 
 def generate_single_charts() -> None:
@@ -369,12 +350,32 @@ def generate_group_charts() -> None:
     _finalize(fig, OUT_DIR / "telecom_family.svg")
 
 
-def main() -> None:
-    print("Generating individual filter response charts...")
-    generate_single_charts()
-    print("Generating family comparison charts...")
-    generate_group_charts()
-    print(f"All figures successfully created in {OUT_DIR}/")
+def _apply_freq_ticks(ax: plt.Axes, sr: int) -> None:
+    """Set manual Hz tick labels (1k instead of 10^3), capped below Nyquist."""
+    lo = ax.get_xlim()[0]
+    ticks = [t for t in _FREQ_TICKS if lo <= t < sr / 2.0]
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([f"{t / 1000:g}k" if t >= 1000 else f"{t:g}" for t in ticks], rotation=30)
+
+
+def _response(fid: str, n: int, sr: int, f_min: float) -> tuple[np.ndarray, np.ndarray]:
+    """Frequency response masked to [f_min, Nyquist]."""
+    w, mag = g191.get_frequency_response(fid, n, sr)
+    mask = (w >= f_min) & (w <= sr / 2.0)
+    return w[mask], mag[mask]
+
+
+def _dc_gain_db(fid: str) -> float:
+    """DC gain in dB = 20*log10(|sum(b)|) for a (typically FIR) filter."""
+    b, _a = g191.get_coefficients_ba_py(fid)
+    s = abs(sum(b))
+    return 20 * math.log10(s) if s > 0 else 0.0
+
+
+def _finalize(fig: plt.Figure, path: Path) -> None:
+    fig.tight_layout()
+    fig.savefig(path)
+    print(f"Generated {path}")
 
 
 if __name__ == "__main__":

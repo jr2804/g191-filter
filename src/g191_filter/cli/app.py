@@ -20,6 +20,7 @@ app = typer.Typer(
 # csort may freely reorder the imports section without breaking them.
 app.command()(commands.default)
 app.command()(commands.filter)
+app.command(name="freqresp")(commands.freqresp)
 
 @app.callback(invoke_without_command=True)
 def _callback(

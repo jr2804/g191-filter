@@ -285,6 +285,55 @@ impl BlockwiseFilter {
 
 use coeffs_generated::{fir as fir_coeffs, iir as iir_coeffs};
 
+/// Construct a filter instance from its configuration.
+/// Handles up/down kernel selection and rate factor derivation.
+pub fn build_filter(config: &FilterConfig) -> FilterInstance {
+    let hswitch = if config.ratio_num > config.ratio_den { 'U' } else { 'D' };
+    let dwn_up = if hswitch == 'U' { config.ratio_num } else { config.ratio_den };
+    let is_up = config.ratio_num > config.ratio_den;
+    match &config.coefficients {
+        Coefficients::Fir { h0 } => FilterInstance::Fir(FirFilter::new(h0, config.gain, dwn_up, hswitch)),
+        Coefficients::IirParallel { gain, direct, b, c } => {
+            FilterInstance::IirParallel(IirFilter::new(*gain, *direct, b, c, config.ratio_num.max(config.ratio_den), is_up))
+        }
+        Coefficients::IirCascade { gain, b, a } => {
+            FilterInstance::IirCascade(CascadeIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), is_up))
+        }
+        Coefficients::IirDirect { gain, b, a } => {
+            FilterInstance::DirectIir(DirectIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), is_up))
+        }
+    }
+}
+
+/// Runtime filter instance, wrapping the appropriate kernel type
+pub enum FilterInstance {
+    Fir(FirFilter),
+    IirParallel(IirFilter),
+    IirCascade(CascadeIirFilter),
+    DirectIir(DirectIirFilter),
+}
+
+impl FilterInstance {
+    /// Process one block and return the output.
+    pub fn process(&mut self, x: &[f64]) -> Vec<f64> {
+        match self {
+            Self::Fir(f) => f.process_block(x),
+            Self::IirParallel(f) => f.process_block(x),
+            Self::IirCascade(f) => f.process_block(x),
+            Self::DirectIir(f) => f.process_block(x),
+        }
+    }
+    /// Reset internal state (delay line + phase).
+    pub fn reset(&mut self) {
+        match self {
+            Self::Fir(f) => f.reset(),
+            Self::IirParallel(f) => f.reset(),
+            Self::IirCascade(f) => f.reset(),
+            Self::DirectIir(f) => f.reset(),
+        }
+    }
+}
+
 /// Configuration of a filter
 #[derive(Debug, Clone)]
 pub struct FilterConfig {

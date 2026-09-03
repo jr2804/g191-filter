@@ -10,7 +10,7 @@ use std::str::FromStr;
 use std::path::PathBuf;
 
 use crate::{
-    get_coefficients_ba, get_coefficients_sos, get_filter_config, list_filter_ids, filter_info,
+    build_filter, get_coefficients_ba, get_coefficients_sos, get_filter_config, list_filter_ids, filter_info,
     BlockwiseFilter, CascadeIirFilter, Coefficients, DirectIirFilter, FilterId, FilterState,
     FilterType, FirFilter, IirFilter,
 };
@@ -338,6 +338,54 @@ fn list_filters() -> Vec<String> {
         .collect()
 }
 
+/// STL fltresp: sine-power frequency response scan.
+/// For each normalized frequency f_norm in [f0, ff], generates a long sinewave,
+/// filters it, and computes 10*log10(P_out/P_in) skipping the first/last 2N samples.
+#[pyfunction]
+#[pyo3(signature = (filter_id, f0, ff, fstep, sample_rate, n_frames=None))]
+fn frequency_response_scan<'py>(
+    py: Python<'py>,
+    filter_id: &str,
+    f0: f64,
+    ff: f64,
+    fstep: f64,
+    sample_rate: f64,
+    n_frames: Option<usize>,
+) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>)> {
+    let fid = FilterId::from_str(filter_id)
+        .map_err(PyValueError::new_err)?;
+    let config = get_filter_config(fid)
+        .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
+    let n: usize = 256;                          // STL fltresp default
+    let n2: usize = n_frames.unwrap_or(20);       // 20 frames → 5120 samples (STL default)
+    let inp_size = n * n2;
+    let edge = 2 * n;                             // skip 2N edge samples
+    let amp = 20000.0_f64;
+    let mut freqs = Vec::<f64>::new();
+    let mut gains = Vec::<f64>::new();
+    let mut f = f0;
+    while f <= ff + 1e-12 {
+        // Adjusted near f=0.5 (Nyquist), like STL
+        let f_adj = if (f - 0.5).abs() < 1e-8 / sample_rate { f - 0.05 * fstep } else { f };
+        let mut filter = build_filter(&config);
+        // Generate sine, filter, compute power
+        let inp: Vec<f64> = (0..inp_size).map(|j| amp * (f_adj * std::f64::consts::TAU * j as f64).sin()).collect();
+        let inp_pwr: f64 = inp.iter().map(|v| v*v).sum::<f64>() / inp_size as f64;
+        let inp_pwr_db = 10.0 * inp_pwr.log10();
+        let out = filter.process(&inp);
+        if out.len() <= 2 * edge {
+            f += fstep;
+            continue;
+        }
+        let out_pwr: f64 = out[edge..out.len()-edge].iter().map(|v| v*v).sum::<f64>() / (out.len() - 2*edge) as f64;
+        let out_pwr_db = 10.0 * out_pwr.log10();
+        freqs.push(f * sample_rate);
+        gains.push(out_pwr_db - inp_pwr_db);
+        f += fstep;
+    }
+    Ok((PyArray1::from_vec(py, freqs), PyArray1::from_vec(py, gains)))
+}
+
 /// Get information about a filter
 #[pyfunction]
 fn get_filter_info_py<'a>(py: Python<'a>, filter_id: &str) -> PyResult<Py<PyDict>> {
@@ -480,7 +528,8 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_coefficients_ba_py, m)?)?;
     m.add_function(wrap_pyfunction!(get_coefficients_sos_py, m)?)?;
     m.add_function(wrap_pyfunction!(list_filters, m)?)?;
-    m.add_function(wrap_pyfunction!(get_filter_info_py, m)?)?;
+    m.add_function(wrap_pyfunction!(frequency_response_scan, m)?)?;
+    m.add_function(wrap_pyfunction!(get_filter_info_py, m)?)?;;
     m.add_function(wrap_pyfunction!(get_frequency_response, m)?)?;
     m.add_class::<BlockwiseFilterPy>()?;
     // Re-export the class under a more idiomatic name

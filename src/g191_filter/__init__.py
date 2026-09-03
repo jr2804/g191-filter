@@ -13,6 +13,7 @@ from _native import (  # noqa: F401
     get_coefficients_sos_py,
     get_filter_info_py,
     get_frequency_response,
+    frequency_response_scan,
     list_filters,
 )
 

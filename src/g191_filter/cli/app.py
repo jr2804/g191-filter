@@ -22,6 +22,7 @@ app.command()(commands.default)
 app.command()(commands.filter)
 app.command(name="freqresp")(commands.freqresp)
 
+
 @app.callback(invoke_without_command=True)
 def _callback(
     version: bool = typer.Option(

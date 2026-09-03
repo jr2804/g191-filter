@@ -9,11 +9,11 @@ from _native import (  # noqa: F401
     export_impulse_response,
     filter_array,
     filter_wave,
+    frequency_response_scan,
     get_coefficients_ba_py,
     get_coefficients_sos_py,
     get_filter_info_py,
     get_frequency_response,
-    frequency_response_scan,
     list_filters,
 )
 

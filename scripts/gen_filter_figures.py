@@ -116,7 +116,7 @@ INDIVIDUAL_FILTERS = [
         "title": "Low-Pass 1.5 kHz Filter (48 kHz)",
         "color": "#10b981",
         "f_min": 50,
-        "y_domain": (-100, 10),
+        "y_domain": (-135, 12),
     },
     {
         "id": "lp35_48khz",
@@ -124,7 +124,7 @@ INDIVIDUAL_FILTERS = [
         "title": "Low-Pass 3.5 kHz Filter (48 kHz)",
         "color": "#059669",
         "f_min": 50,
-        "y_domain": (-100, 10),
+        "y_domain": (-135, 12),
     },
     {
         "id": "lp7_48khz",
@@ -132,7 +132,7 @@ INDIVIDUAL_FILTERS = [
         "title": "Low-Pass 7.0 kHz Filter (48 kHz)",
         "color": "#047857",
         "f_min": 50,
-        "y_domain": (-100, 10),
+        "y_domain": (-135, 12),
     },
     {
         "id": "lp10_48khz",
@@ -140,7 +140,7 @@ INDIVIDUAL_FILTERS = [
         "title": "Low-Pass 10.0 kHz Filter (48 kHz)",
         "color": "#0f766e",
         "f_min": 50,
-        "y_domain": (-100, 10),
+        "y_domain": (-125, 12),
     },
     {
         "id": "lp12_48khz",
@@ -148,7 +148,7 @@ INDIVIDUAL_FILTERS = [
         "title": "Low-Pass 12.0 kHz Filter (48 kHz)",
         "color": "#115e59",
         "f_min": 50,
-        "y_domain": (-90, 10),
+        "y_domain": (-105, 12),
     },
     {
         "id": "lp14_48khz",
@@ -156,7 +156,7 @@ INDIVIDUAL_FILTERS = [
         "title": "Low-Pass 14.0 kHz Filter (48 kHz)",
         "color": "#134e4a",
         "f_min": 50,
-        "y_domain": (-60, 15),
+        "y_domain": (-45, 12),
     },
     {
         "id": "lp20_48khz",
@@ -164,7 +164,7 @@ INDIVIDUAL_FILTERS = [
         "title": "Low-Pass 20.0 kHz Filter (48 kHz)",
         "color": "#064e3b",
         "f_min": 50,
-        "y_domain": (-50, 15),
+        "y_domain": (-20, 12),
     },
     # IIR Filters
     {

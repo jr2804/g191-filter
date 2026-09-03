@@ -86,7 +86,16 @@ response curves of telephone handsets. They are indispensable for speech quality
 
 ### 2. 48 kHz Low-Pass Filter Suite
 
-A family of linear-phase FIR low-pass filters designed for bandwidth limiting, anti-aliasing, and anti-imaging filtering at a standard 48 kHz sampling rate.
+A family of linear-phase FIR low-pass filters for bandwidth limiting at a standard 48 kHz sampling rate.
+
+!!! warning "These are shaping filters, not resampling filters"
+    The LP suite rolls off **gradually** from well below its nominal cutoff
+    (the nominal value corresponds to ≈ −10 dB, the −3 dB point lies at
+    ≈ 0.65 × f<sub>c</sub>) and its stopband rejection is far from uniform.
+    It is **not** a hard/brickwall low-pass and is not suitable as an
+    anti-alias / anti-imaging filter for sample-rate conversion — use the
+    [Resampling & Rate-Conversion filters](#3-resampling-rate-conversion-filters)
+    (−150 … −178 dB, steep transition) for that purpose.
 
 !!! note "Passband gain is not 0 dB"
     The G.191 LP suite is implemented as-designed from the STL reference: the
@@ -104,15 +113,29 @@ A family of linear-phase FIR low-pass filters designed for bandwidth limiting, a
 
 #### Specifications
 
-| Filter ID | Cutoff ($f_c$) | Taps | Passband Ripple | Stopband Rejection |
-| --------- | -------------- | ---- | --------------- | ------------------ |
-| `lp1p5_48khz` | 1.5 kHz | 333 | < 0.05 dB | > 80 dB |
-| `lp35_48khz` | 3.5 kHz | 233 | < 0.05 dB | > 80 dB |
-| `lp7_48khz` | 7.0 kHz | 119 | < 0.05 dB | > 80 dB |
-| `lp10_48khz` | 10.0 kHz | 87 | < 0.05 dB | > 80 dB |
-| `lp12_48khz` | 12.0 kHz | 165 | < 0.05 dB | > 80 dB |
-| `lp14_48khz` | 14.0 kHz | 235 | < 0.05 dB | > 80 dB |
-| `lp20_48khz` | 20.0 kHz | 165 | < 0.05 dB | > 80 dB |
+| Filter ID | Cutoff ($f_c$) | Taps | −3 dB point | Rejection @ Nyquist¹ | Min. stopband² |
+| --------- | -------------- | ---- | ----------- | -------------------- | -------------- |
+| `lp1p5_48khz` | 1.5 kHz | 333 | 0.42 kHz | −126 dB | −126 dB @ 23.4 kHz |
+| `lp35_48khz` | 3.5 kHz | 233 | 0.75 kHz | −121 dB | −124 dB @ 18.9 kHz |
+| `lp7_48khz` | 7.0 kHz | 119 | 1.37 kHz | −66 dB | −126 dB @ 18.6 kHz |
+| `lp10_48khz` | 10.0 kHz | 87 | 1.96 kHz | −55 dB | −116 dB @ 16.7 kHz |
+| `lp12_48khz` | 12.0 kHz | 165 | 1.54 kHz | −94 dB | −94 dB @ 20.3 kHz |
+| `lp14_48khz` | 14.0 kHz | 235 | 1.41 kHz | −28 dB | −28 dB @ 22.7 kHz |
+| `lp20_48khz` | 20.0 kHz | 165 | 1.82 kHz | −9 dB | −12 dB @ 15.4 kHz |
+
+¹ Magnitude (DC-normalized) in the top 5 % band below Nyquist (22.8–24 kHz) —
+the value that matters for aliasing near the folding frequency.
+
+² Minimum of the stopband (f > 1.1·f<sub>c</sub>) — a single spectral null;
+the rejection elsewhere in the stopband can be markedly weaker (see the
+family chart).
+
+All values **measured** from the implemented coefficient sets (2048-point
+frequency response, DC-normalized) — not datasheet targets. The nominal
+$f_c$ marks the ≈ −10 dB point of the published STL response, and the
+passband shows a monotone droop (e.g. −3.5 dB at 500 Hz for `lp1p5_48khz`),
+so neither an equiripple "< 0.05 dB" passband nor a uniform "> 80 dB"
+stopband applies.
 
 #### Individual Responses
 

@@ -17,6 +17,9 @@ uv.lock
 .sisyphus
 .config/memorygraph/memory.db
 /.opencode
+.codex
+.claude
+CLAUDE.md
 
 # temp folders
 /.tmp

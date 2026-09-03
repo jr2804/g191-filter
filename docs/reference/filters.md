@@ -113,22 +113,35 @@ A family of linear-phase FIR low-pass filters for bandwidth limiting at a standa
 
 #### Specifications
 
-| Filter ID | Cutoff ($f_c$) | Taps | −3 dB point | Rejection @ Nyquist¹ | Min. stopband² |
-| --------- | -------------- | ---- | ----------- | -------------------- | -------------- |
-| `lp1p5_48khz` | 1.5 kHz | 333 | 0.42 kHz | −126 dB | −126 dB @ 23.4 kHz |
-| `lp35_48khz` | 3.5 kHz | 233 | 0.75 kHz | −121 dB | −124 dB @ 18.9 kHz |
-| `lp7_48khz` | 7.0 kHz | 119 | 1.37 kHz | −66 dB | −126 dB @ 18.6 kHz |
-| `lp10_48khz` | 10.0 kHz | 87 | 1.96 kHz | −55 dB | −116 dB @ 16.7 kHz |
-| `lp12_48khz` | 12.0 kHz | 165 | 1.54 kHz | −94 dB | −94 dB @ 20.3 kHz |
-| `lp14_48khz` | 14.0 kHz | 235 | 1.41 kHz | −28 dB | −28 dB @ 22.7 kHz |
-| `lp20_48khz` | 20.0 kHz | 165 | 1.82 kHz | −9 dB | −12 dB @ 15.4 kHz |
+| Filter ID | Cutoff ($f_c$) | Taps | Intended Band Edge¹ | Attenuation @ Edge² | Rejection @ Nyquist³ | Min. Stopband⁴ |
+| --------- | -------------- | ---- | ------------------- | ------------------- | -------------------- | --------------- |
+| `lp1p5_48khz` | 1.5 kHz | 333 | 2.0 kHz | −15.8 dB | −126 dB | −126 dB @ 23.4 kHz |
+| `lp35_48khz` | 3.5 kHz | 233 | 4.0 kHz | −13.2 dB | −121 dB | −124 dB @ 18.9 kHz |
+| `lp7_48khz` | 7.0 kHz | 119 | 8.0 kHz | −12.5 dB | −66 dB | −126 dB @ 18.6 kHz |
+| `lp10_48khz` | 10.0 kHz | 87 | 12.0 kHz | −13.0 dB | −55 dB | −116 dB @ 16.7 kHz |
+| `lp12_48khz` | 12.0 kHz | 165 | 14.0 kHz | −12.8 dB | −94 dB | −94 dB @ 20.3 kHz |
+| `lp14_48khz` | 14.0 kHz | 235 | 16.0 kHz | −19.1 dB | −28 dB | −28 dB @ 22.7 kHz |
+| `lp20_48khz` | 20.0 kHz | 165 | 24.0 kHz | −8.8 dB | −9 dB | −12 dB @ 15.4 kHz |
 
-¹ Magnitude (DC-normalized) in the top 5 % band below Nyquist (22.8–24 kHz) —
-the value that matters for aliasing near the folding frequency.
+¹ **Intended band edge** — the application-defined limit the filter is meant
+ to constrain to (ITU-T NB/WB/SWB/FB and 3GPP EVS designations, detailed
+ below the table). The edge lies above the nominal $f_c$ because the
+ filter rolls off gradually (see warning above).
 
-² Minimum of the stopband (f > 1.1·f<sub>c</sub>) — a single spectral null;
-the rejection elsewhere in the stopband can be markedly weaker (see the
-family chart).
+² **Attenuation @ Edge** — measured response (DC-normalized) at the intended
+ band edge, i.e. how much the filter rejects exactly at the boundary it is
+ meant to limit to. About −13 dB for the mid-range LP filters (consistent
+ with the published STL response); −19 dB for `lp14` and −9 dB for `lp20`.
+ Note `lp20`'s edge *is* the Nyquist frequency, so its attenuation there
+ is simply its residual response — effectively no stopband at all.
+
+³ **Rejection @ Nyquist** — magnitude in the top 5 % band below Nyquist
+(22.8–24 kHz), the value that matters for aliasing near the folding
+frequency. lp14 / lp20 have no real stopband here.
+
+⁴ **Min. Stopband** — minimum of the stopband (f > 1.1·f<sub>c</sub>),
+i.e. a single spectral null; the rejection elsewhere in the stopband
+can be markedly weaker (see column 5 and the family chart).
 
 All values **measured** from the implemented coefficient sets (2048-point
 frequency response, DC-normalized) — not datasheet targets. The nominal
@@ -136,6 +149,13 @@ $f_c$ marks the ≈ −10 dB point of the published STL response, and the
 passband shows a monotone droop (e.g. −3.5 dB at 500 Hz for `lp1p5_48khz`),
 so neither an equiripple "< 0.05 dB" passband nor a uniform "> 80 dB"
 stopband applies.
+
+**Intended band edge reference:** `lp35` (4 kHz) follows the ITU-T
+narrowband (NB) limit; `lp7` (8 kHz) the wideband (WB) limit;
+`lp12` (14 kHz) the super-wideband (SWB) limit; `lp14` (16 kHz) the
+alternative 16 kHz SWB extension used in 3GPP SA4 / EVS codecs;
+`lp20` (24 kHz) sits at the Nyquist of 48 kHz, corresponding to the
+ITU-T fullband (FB) limit (20 kHz).
 
 #### Individual Responses
 

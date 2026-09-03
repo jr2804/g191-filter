@@ -183,6 +183,8 @@ unwrap_annotated = true
 [[project.extra_javascript]]
 path = "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"
 [[project.extra_javascript]]
+path = "assets/javascripts/mathjax-init.js"
+[[project.extra_javascript]]
 path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
 [[project.extra_javascript]]
 path = "assets/javascripts/mermaid-init.js"

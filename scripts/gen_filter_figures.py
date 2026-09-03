@@ -26,27 +26,29 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 # Figure card background: light gray stays readable on both light and dark pages.
 BG = "#f4f4f5"
 
-plt.rcParams.update({
-    # Fonts
-    "font.size": 13,
-    "axes.titlesize": 16,
-    "axes.labelsize": 14,
-    "legend.fontsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-    # Backgrounds
-    "figure.facecolor": BG,
-    "axes.facecolor": BG,
-    # Ink
-    "axes.edgecolor": "#71717a",
-    "axes.labelcolor": "#27272a",
-    "text.color": "#27272a",
-    "xtick.color": "#3f3f46",
-    "ytick.color": "#3f3f46",
-    "grid.color": "#d4d4d8",
-    # Lines
-    "lines.linewidth": 2.5,
-})
+plt.rcParams.update(
+    {
+        # Fonts
+        "font.size": 13,
+        "axes.titlesize": 16,
+        "axes.labelsize": 14,
+        "legend.fontsize": 12,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        # Backgrounds
+        "figure.facecolor": BG,
+        "axes.facecolor": BG,
+        # Ink
+        "axes.edgecolor": "#71717a",
+        "axes.labelcolor": "#27272a",
+        "text.color": "#27272a",
+        "xtick.color": "#3f3f46",
+        "ytick.color": "#3f3f46",
+        "grid.color": "#d4d4d8",
+        # Lines
+        "lines.linewidth": 2.5,
+    }
+)
 
 # List of all 20 individual filters with their native parameters and visual styling
 INDIVIDUAL_FILTERS = [
@@ -58,6 +60,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#0284c7",
         "f_min": 50,
         "y_domain": (-100, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "hq_down_3_to_1",
@@ -66,6 +69,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#0369a1",
         "f_min": 50,
         "y_domain": (-100, 10),
+        "xlim": (50, 24000),
     },
     # Band-Pass FIR
     {
@@ -75,6 +79,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#0d9488",
         "f_min": 50,
         "y_domain": (-80, 10),
+        "xlim": (10, 4000),
     },
     # IRS Family FIR
     {
@@ -83,7 +88,8 @@ INDIVIDUAL_FILTERS = [
         "title": "IRS 8 kHz (Intermediate Reference System)",
         "color": "#2563eb",
         "f_min": 50,
-        "y_domain": (-60, 10),
+        "y_domain": (-70, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "irs16khz",
@@ -92,6 +98,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#3b82f6",
         "f_min": 50,
         "y_domain": (-70, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "mod_irs16khz",
@@ -99,7 +106,8 @@ INDIVIDUAL_FILTERS = [
         "title": "Modified IRS 16 kHz (Wideband IRS)",
         "color": "#f59e0b",
         "f_min": 50,
-        "y_domain": (-60, 10),
+        "y_domain": (-70, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "mod_irs48khz",
@@ -108,6 +116,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#d97706",
         "f_min": 50,
         "y_domain": (-70, 10),
+        "xlim": (50, 24000),
     },
     # 48 kHz Low-Pass FIR Family
     {
@@ -174,6 +183,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#8b5cf6",
         "f_min": 50,
         "y_domain": (-60, 20),
+        "xlim": (10, 4000),
     },
     {
         "id": "dir_dc_removal",
@@ -182,6 +192,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#ec4899",
         "f_min": 5,
         "y_domain": (-40, 5),
+        "xlim": (10, 4000),
     },
     {
         "id": "iir_down_3_to_1",
@@ -190,6 +201,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#6366f1",
         "f_min": 50,
         "y_domain": (-120, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "iir_up_1_to_3",
@@ -206,6 +218,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#7c3aed",
         "f_min": 50,
         "y_domain": (-120, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "iir_casc_lp_1_to_3",
@@ -223,6 +236,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#e69f00",
         "f_min": 50,
         "y_domain": (-90, 10),
+        "xlim": (10, 8000),
     },
     {
         "id": "psophometric_8khz",
@@ -231,6 +245,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#cc79a7",
         "f_min": 50,
         "y_domain": (-100, 10),
+        "xlim": (10, 8000),
     },
     {
         "id": "dsm16khz",
@@ -239,6 +254,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#56b4e9",
         "f_min": 50,
         "y_domain": (-60, 10),
+        "xlim": (10, 8000),
     },
     {
         "id": "hirs16khz",
@@ -247,6 +263,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#f0e442",
         "f_min": 50,
         "y_domain": (-95, 10),
+        "xlim": (10, 8000),
     },
     {
         "id": "tia_irs8khz",
@@ -255,6 +272,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#009e73",
         "f_min": 50,
         "y_domain": (-85, 10),
+        "xlim": (10, 8000),
     },
     {
         "id": "rx_irs8khz",
@@ -263,6 +281,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#d55e00",
         "f_min": 50,
         "y_domain": (-70, 10),
+        "xlim": (10, 8000),
     },
     {
         "id": "rx_irs16khz",
@@ -271,6 +290,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#e69f00",
         "f_min": 50,
         "y_domain": (-70, 10),
+        "xlim": (10, 8000),
     },
     {
         "id": "p341_16khz",
@@ -279,6 +299,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#8b5cf6",
         "f_min": 50,
         "y_domain": (-75, 10),
+        "xlim": (10, 8000),
     },
     # Band-Pass FIR Family
     {
@@ -288,6 +309,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#0072B2",
         "f_min": 50,
         "y_domain": (-80, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "bp100_5k_16khz",
@@ -296,6 +318,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#009E73",
         "f_min": 50,
         "y_domain": (-80, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "bp14k_32khz",
@@ -304,6 +327,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#56B4E9",
         "f_min": 50,
         "y_domain": (-80, 10),
+        "xlim": (50, 24000),
     },
     {
         "id": "bp20k_48khz",
@@ -312,6 +336,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#D55E00",
         "f_min": 50,
         "y_domain": (-80, 10),
+        "xlim": (50, 24000),
     },
     # Upsampler FIR Family
     {
@@ -354,6 +379,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#8b5cf6",
         "f_min": 50,
         "y_domain": (-60, 20),
+        "xlim": (50, 8000),
     },
     {
         "id": "stdpcm_2_to_1",
@@ -362,6 +388,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#a78bfa",
         "f_min": 50,
         "y_domain": (-60, 20),
+        "xlim": (50, 8000),
     },
     {
         "id": "stdpcm_1_to_2",
@@ -370,6 +397,7 @@ INDIVIDUAL_FILTERS = [
         "color": "#c4b5fd",
         "f_min": 50,
         "y_domain": (-60, 20),
+        "xlim": (50, 8000),
     },
 ]
 
@@ -400,11 +428,12 @@ def generate_single_charts() -> None:
         ax.set(
             ylabel="Magnitude (dB)",
             title=item["title"],
-            xlim=(f_min, sr / 2.0),
+            xlim=item.get("xlim", (f_min, sr / 2.0)),
             ylim=item["y_domain"],
         )
         ax.set_xlabel("Frequency (Hz)", labelpad=40)
         ax.grid(True, which="both", alpha=0.4)
+        ax.legend(loc="lower left")
         _apply_freq_ticks(ax, sr)
         _finalize(fig, OUT_DIR / f"{fid}.svg")
 
@@ -430,7 +459,7 @@ def generate_group_charts() -> None:
     )
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
-    ax.legend()
+    ax.legend(loc="lower left")
     _apply_freq_ticks(ax, 48000)
     _finalize(fig, OUT_DIR / "irs_family.svg")
 
@@ -459,7 +488,7 @@ def generate_group_charts() -> None:
     )
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
-    ax.legend()
+    ax.legend(loc="lower left")
     _apply_freq_ticks(ax, 48000)
     _finalize(fig, OUT_DIR / "lp_48k_family.svg")
 
@@ -481,7 +510,7 @@ def generate_group_charts() -> None:
     )
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
-    ax.legend()
+    ax.legend(loc="lower left")
     _apply_freq_ticks(ax, 48000)
     _finalize(fig, OUT_DIR / "resampling_family.svg")
 
@@ -502,8 +531,9 @@ def generate_group_charts() -> None:
     )
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
-    ax.legend()
+    ax.legend(loc="lower left")
     _apply_freq_ticks(ax, 8000)
+
 
 def generate_group_charts_new_families() -> None:
     """Family charts for the weighting, band-pass, upsampler, and PCM families."""
@@ -524,7 +554,7 @@ def generate_group_charts_new_families() -> None:
     ax.set(ylabel="Magnitude (dB)", title="Weighting / Measurement FIR Family", xlim=(10, 8000), ylim=(-100, 10))
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
-    ax.legend(ncol=2)
+    ax.legend(loc="lower left", ncol=2)
     _apply_freq_ticks(ax, 16000)
     _finalize(fig, OUT_DIR / "weighting_family.svg")
 
@@ -541,7 +571,7 @@ def generate_group_charts_new_families() -> None:
     ax.set(ylabel="Magnitude (dB)", title="Band-Pass FIR Family", xlim=(50, 24000), ylim=(-80, 10))
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
-    ax.legend()
+    ax.legend(loc="lower left")
     _apply_freq_ticks(ax, 48000)
     _finalize(fig, OUT_DIR / "bandpass_family.svg")
 
@@ -557,7 +587,7 @@ def generate_group_charts_new_families() -> None:
     ax.set(ylabel="Magnitude (dB)", title="Upsampler FIR Family", xlim=(50, 4000), ylim=(-100, 10))
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
-    ax.legend()
+    ax.legend(loc="lower left")
     _apply_freq_ticks(ax, 8000)
     _finalize(fig, OUT_DIR / "upsampler_family.svg")
 
@@ -573,15 +603,16 @@ def generate_group_charts_new_families() -> None:
     ax.set(ylabel="Magnitude (dB)", title="Standard PCM IIR Family", xlim=(50, 8000), ylim=(-60, 20))
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
-    ax.legend()
+    ax.legend(loc="lower left")
     _apply_freq_ticks(ax, 16000)
     _finalize(fig, OUT_DIR / "pcm_family.svg")
 
 
 def _apply_freq_ticks(ax: plt.Axes, sr: int) -> None:
-    """Set manual Hz tick labels (1k instead of 10^3), capped below Nyquist."""
+    """Set manual Hz tick labels (1k instead of 10^3), capped at axis xmax."""
     lo = ax.get_xlim()[0]
-    ticks = [t for t in _FREQ_TICKS if lo <= t < sr / 2.0]
+    hi = ax.get_xlim()[1]
+    ticks = [t for t in _FREQ_TICKS if lo <= t <= hi]
     ax.set_xticks(ticks)
     ax.set_xticklabels([f"{t / 1000:g}k" if t >= 1000 else f"{t:g}" for t in ticks], rotation=30)
 

@@ -20,8 +20,10 @@ telephony equipment evaluation, perceptual audio quality testing (e.g. PESQ, POL
 
 - **IRS (Intermediate Reference System)**: Standard 8 kHz, 16 kHz, and Modified IRS 16/48 kHz sending/receiving curves simulating handset frequency characteristics.
 - **Low-Pass Suite**: Precise 48 kHz linear-phase FIR filters with cutoffs at 1.5, 3.5, 7.0, 10.0, 12.0, 14.0, and 20.0 kHz.
-- **Resampling & Rate-Conversion**: High-quality 2:1 and 3:1 decimation and interpolation FIR/IIR stages with polyphase decimation.
-- **Telecom & Conditioning**: Flat band-pass (300–3400 Hz), G.712 PCM voice channel filters, and DC removal high-pass filters.
+- **Resampling & Rate-Conversion**: High-quality 2:1/3:1 FIR/HQ decimation, 1:2/1:3 FIR up-sampling, and IIR 3:1 direct/cascade stages with integrated rate change.
+- **Standard PCM**: Standard PCM weighting filters (parallel-form IIR, 16 kHz design) with 1:1, 2:1 downsampling, and 1:2 upsampling variants.
+- **Weighting & Measurement**: ITU-T measurement weightings including psophometric noise, P.341, half-tilt IRS, TIA-IRS, and delta-sigma modulation.
+- **Wideband Band-Pass**: Linear-phase filters from narrowband (50 Hz) to fullband (20 kHz) at 16/32/48 kHz.
 
 This package provides:
 
@@ -82,8 +84,10 @@ filter_wave("lp7_48khz", "input_48k.wav", output_file="output_lp7.wav")
 | ------ | ---------- | ----------- | ------------ |
 | **IRS Family** | `irs8khz`, `irs16khz`, `mod_irs16khz`, `mod_irs48khz` | Intermediate Reference System telephony handset responses | 8 / 16 / 48 kHz |
 | **48 kHz Low-Pass** | `lp1p5_48khz`, `lp35_48khz`, `lp7_48khz`, `lp10_48khz`, `lp12_48khz`, `lp14_48khz`, `lp20_48khz` | Linear-phase anti-aliasing / band-limiting low-pass filters | 48 kHz |
-| **Resampling** | `hq_down_2_to_1`, `hq_down_3_to_1`, `iir_down_3_to_1`, `iir_up_1_to_3`, `iir_casc_lp_3_to_1`, `iir_casc_lp_1_to_3` | Decimation & interpolation filters with integrated rate change | 16 / 48 kHz |
-| **Telecom & DC** | `flat_band_pass`, `g712_8khz`, `dir_dc_removal` | Flat 300–3400 Hz bandpass, G.712 PCM channel filter, and DC block | 8 kHz |
+| **Resampling** | `hq_down_2_to_1`, `hq_down_3_to_1`, `hq_up_1_to_2`, `hq_up_1_to_3`, `flat_1_to_2`, `flat1`, `iir_down_3_to_1`, `iir_up_1_to_3`, `iir_casc_lp_3_to_1`, `iir_casc_lp_1_to_3` | Decimation & interpolation filters with integrated rate change | 8 / 16 / 48 kHz |
+| **Telecom & DC** | `flat_band_pass`, `g712_8khz`, `stdpcm_16khz`, `stdpcm_2_to_1`, `stdpcm_1_to_2`, `dir_dc_removal` | Flat 300–3400 Hz bandpass, G.712 PCM channel filter (parallel-form IIR, with 2:1/1:2 rate variants), and DC block | 8 / 16 kHz |
+| **Weighting & Measurement** | `msin16khz`, `psophometric_8khz`, `dsm16khz`, `hirs16khz`, `tia_irs8khz`, `rx_irs8khz`, `rx_irs16khz`, `p341_16khz` | ITU-T measurement weightings: psophometric noise, P.341, half-tilt IRS, TIA-IRS, delta-SM | 8 / 16 kHz |
+| **Band-Pass (Wideband)** | `bp5k_16khz`, `bp100_5k_16khz`, `bp14k_32khz`, `bp20k_48khz` | Linear-phase band-pass filters from narrowband up to fullband (20 Hz–20 kHz) | 16 / 32 / 48 kHz |
 
 Detailed frequency response curves, coefficient specifications, and parameter references are available in the [Documentation](https://jr2804.github.io/g191-filter/).
 

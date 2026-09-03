@@ -133,7 +133,7 @@ impl FirFilter {
         y
     }
 
-    /// STL fir_upsampling_kernel
+    /// STL fir_upsampling_kernel: filter + up-by-dwn_up (outputs dwn_up samples per input).
     fn upsampling_kernel(&mut self, x: &[f64]) -> Vec<f64> {
         let lenx = x.len();
         if lenx == 0 {
@@ -141,51 +141,52 @@ impl FirFilter {
         }
         let lenh0 = self.h0.len();
         let iupfac = self.dwn_up as usize;
+        let lh = lenh0 / iupfac;        /* = lenh0 / iupfac in C */
+        let lh_1 = lh - 1;            /* lenh0/iupfac - 1 (C upper bound; iupfac<=lenh0/2 so lh>=2) */
         let mut y = Vec::new();
 
-        // First Step: transition from k=0..lenh0/iupfac-2
-        let ktrans = (lenh0 / iupfac).min(lenx);
+        /* ............. FIRST STEP: transition from k=0..lh-2 ............. */
+        let ktrans = if lh > lenx { lenx } else { lh };
         let mut kstart = 0usize;
-
         for kx in 0..ktrans {
             for iup in 0..iupfac {
                 let mut acc = x[kx] * self.h0[iup];
                 for kappa in 1..=kx {
                     acc += x[kx - kappa] * self.h0[iup + kappa * iupfac];
                 }
-                for kappa in (kx + 1)..(lenh0 / iupfac) {
-                    acc += self.t[lenh0 / iupfac - 2 + kx + 1 - kappa]
-                        * self.h0[iup + kappa * iupfac];
+                for kappa in (kx + 1)..lh {
+                    acc += self.t[lh - 2 + kx + 1 - kappa] * self.h0[iup + kappa * iupfac];
                 }
                 y.push(acc);
             }
             kstart = kx;
         }
 
-        // Second Step: remaining dot-products completely from x[]
+        /* ............. SECOND STEP: remaining dot-products from x[] ............. */
         for kx in (kstart + 1)..lenx {
             for iup in 0..iupfac {
                 let mut acc = x[kx] * self.h0[iup];
-                for kappa in 1..(lenh0 / iupfac) {
+                for kappa in 1..lh {
                     acc += x[kx - kappa] * self.h0[iup + kappa * iupfac];
                 }
                 y.push(acc);
             }
         }
 
-        // Last Step: update delay line
-        // C reference stores delay line chronologically (oldest first).
-        if lenx >= lenh0 / iupfac - 1 {
-            for kappa in 0..(lenh0 / iupfac) {
-                self.t[kappa] = x[lenx + 1 - lenh0 / iupfac + kappa];
+        /* ............. LAST STEP: update delay line ............. */
+        /* C: T[kappa] = x[lenx+1-lh+kappa], kappa = 0..<=lh-2 (== 0..lh_1) */
+        if lenx >= lh_1 {
+            for kappa in 0..lh_1 {
+                self.t[kappa] = x[lenx + 1 - lh + kappa];
             }
         } else {
-            let shift = lenh0 / iupfac - 1 - lenx;
-            for kappa in 0..shift {
+            /* left-shift T[k] = T[k+lenx]; kappa = 0..<=lh-2-lenx (== 0..lh_1-lenx) */
+            for kappa in 0..(lh_1 - lenx) {
                 self.t[kappa] = self.t[kappa + lenx];
             }
-            for kappa in (lenh0 / iupfac - 1 - lenx)..(lenh0 / iupfac) {
-                self.t[kappa] = x[lenx - 1 + kappa - (lenh0 / iupfac - 2)];
+            /* copy end of x[] -> T[]; kappa = lh-1-lenx .. lh-2 (== lh_1-lenx .. lh_1) */
+            for kappa in (lh_1 - lenx)..lh_1 {
+                self.t[kappa] = x[lenx - 1 + kappa - (lh - 2)];
             }
         }
 

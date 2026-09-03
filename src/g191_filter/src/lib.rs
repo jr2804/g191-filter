@@ -147,19 +147,21 @@ impl BlockwiseFilter {
         let config = get_filter_config(filter_id)?;
         let inner = match &config.coefficients {
             Coefficients::Fir { h0 } => {
-                let f = FirFilter::new(h0, config.gain, config.ratio_den, 'D');
+                let hswitch = if config.ratio_num > config.ratio_den { 'U' } else { 'D' };
+                let dwn_up = if hswitch == 'U' { config.ratio_num } else { config.ratio_den };
+                let f = FirFilter::new(h0, config.gain, dwn_up, hswitch);
                 FilterInner::Fir(f)
             }
             Coefficients::IirParallel { gain, direct, b, c } => {
-                let f = IirFilter::new(*gain, *direct, b, c, config.ratio_den);
+                let f = IirFilter::new(*gain, *direct, b, c, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 FilterInner::IirParallel(f)
             }
             Coefficients::IirCascade { gain, b, a } => {
-                let f = CascadeIirFilter::new(*gain, b, a, config.ratio_den);
+                let f = CascadeIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 FilterInner::IirCascade(f)
             }
             Coefficients::IirDirect { gain, b, a } => {
-                let f = DirectIirFilter::new(*gain, b, a, config.ratio_den);
+                let f = DirectIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 FilterInner::IirDirect(f)
             }
         };
@@ -366,12 +368,12 @@ pub fn get_filter_config(filter_id: FilterId) -> Option<FilterConfig> {
         FilterId::ModIRS16 => (
             FilterType::Fir, 16000.0, fir_coeffs::MOD_IRS16.len(),
             Coefficients::Fir { h0: fir_coeffs::MOD_IRS16.to_vec() },
-            1, 1, 1.0,
+            1, 1, -1.0,  /* STL: mod_irs16/48 apply polarity inversion */
         ),
         FilterId::ModIRS48 => (
-            FilterType::Fir, 8000.0, fir_coeffs::MOD_IRS48.len(),
+            FilterType::Fir, 48000.0, fir_coeffs::MOD_IRS48.len(),
             Coefficients::Fir { h0: fir_coeffs::MOD_IRS48.to_vec() },
-            1, 1, 1.0,
+            1, 1, -1.0,  /* STL: mod_irs16/48 apply polarity inversion */
         ),
         FilterId::LP1p5_48k => (
             FilterType::Fir, 48000.0, fir_coeffs::LP1P5_48K.len(),
@@ -408,6 +410,90 @@ pub fn get_filter_config(filter_id: FilterId) -> Option<FilterConfig> {
             Coefficients::Fir { h0: fir_coeffs::LP20_48K.to_vec() },
             1, 1, 1.0,
         ),
+        // --- HQ upsamplers: reuse down-sampler coeff set, gain = up-factor, 'U' kernel ---
+        FilterId::HQUp1To2 => (
+            FilterType::Fir, 8000.0, fir_coeffs::HQ_DOWN_2_TO_1.len(),
+            Coefficients::Fir { h0: fir_coeffs::HQ_DOWN_2_TO_1.to_vec() },
+            2, 1, 2.0,
+        ),
+        FilterId::HQUp1To3 => (
+            FilterType::Fir, 8000.0, fir_coeffs::HQ_DOWN_3_TO_1.len(),
+            Coefficients::Fir { h0: fir_coeffs::HQ_DOWN_3_TO_1.to_vec() },
+            3, 1, 3.0,
+        ),
+        // --- Flat band-pass family (reuse flat_band_pass coefficients) ---
+        FilterId::FlatBandPass1 => (
+            FilterType::Fir, 8000.0, fir_coeffs::FLAT_BAND_PASS.len(),
+            Coefficients::Fir { h0: fir_coeffs::FLAT_BAND_PASS.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::FlatBandPass1To2 => (
+            FilterType::Fir, 8000.0, fir_coeffs::FLAT_BAND_PASS.len(),
+            Coefficients::Fir { h0: fir_coeffs::FLAT_BAND_PASS.to_vec() },
+            2, 1, 2.0,
+        ),
+        // --- Psophometric / measurement filters ---
+        FilterId::Msin16k => (
+            FilterType::Fir, 16000.0, fir_coeffs::MSIN_16K.len(),
+            Coefficients::Fir { h0: fir_coeffs::MSIN_16K.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::Pso8k => (
+            FilterType::Fir, 8000.0, fir_coeffs::PSO_8K.len(),
+            Coefficients::Fir { h0: fir_coeffs::PSO_8K.to_vec() },
+            1, 1, 1.0,
+        ),
+        // --- IRS variants ---
+        FilterId::Hirs16 => (
+            FilterType::Fir, 16000.0, fir_coeffs::HIRS16.len(),
+            Coefficients::Fir { h0: fir_coeffs::HIRS16.to_vec() },
+            1, 1, 1.08,
+        ),
+        FilterId::TiaIrs8 => (
+            FilterType::Fir, 8000.0, fir_coeffs::TIA_IRS8.len(),
+            Coefficients::Fir { h0: fir_coeffs::TIA_IRS8.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::RxIrs8 => (
+            FilterType::Fir, 8000.0, fir_coeffs::RX_MOD_IRS8.len(),
+            Coefficients::Fir { h0: fir_coeffs::RX_MOD_IRS8.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::RxIrs16 => (
+            FilterType::Fir, 16000.0, fir_coeffs::RX_MOD_IRS16.len(),
+            Coefficients::Fir { h0: fir_coeffs::RX_MOD_IRS16.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::Dsm16k => (
+            FilterType::Fir, 16000.0, fir_coeffs::DSM_16K.len(),
+            Coefficients::Fir { h0: fir_coeffs::DSM_16K.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::P341_16k => (
+            FilterType::Fir, 16000.0, fir_coeffs::P341_16K.len(),
+            Coefficients::Fir { h0: fir_coeffs::P341_16K.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::Bp5k16k => (
+            FilterType::Fir, 16000.0, fir_coeffs::BP5K_16K.len(),
+            Coefficients::Fir { h0: fir_coeffs::BP5K_16K.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::Bp100_5k16k => (
+            FilterType::Fir, 16000.0, fir_coeffs::BP100_5K_16K.len(),
+            Coefficients::Fir { h0: fir_coeffs::BP100_5K_16K.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::Bp14k32k => (
+            FilterType::Fir, 32000.0, fir_coeffs::BP14K_32K.len(),
+            Coefficients::Fir { h0: fir_coeffs::BP14K_32K.to_vec() },
+            1, 1, 1.0,
+        ),
+        FilterId::Bp20k48k => (
+            FilterType::Fir, 48000.0, fir_coeffs::BP20K_48K.len(),
+            Coefficients::Fir { h0: fir_coeffs::BP20K_48K.to_vec() },
+            1, 1, 1.0,
+        ),
         FilterId::G712_8k => (
             FilterType::Iir, 8000.0, 4,
             Coefficients::IirParallel {
@@ -417,6 +503,37 @@ pub fn get_filter_config(filter_id: FilterId) -> Option<FilterConfig> {
                 c: iir_coeffs::G712_16K_C.to_vec(),
             },
             1, 1, 1.0,
+        ),
+        // --- Standard PCM filters (same G.712 parallel IIR, different rate factors) ---
+        FilterId::Pcm16k => (
+            FilterType::Iir, 16000.0, 4,
+            Coefficients::IirParallel {
+                gain: 1.0,
+                direct: iir_coeffs::G712_16K_K,
+                b: iir_coeffs::G712_16K_B.to_vec(),
+                c: iir_coeffs::G712_16K_C.to_vec(),
+            },
+            1, 1, 1.0,
+        ),
+        FilterId::Pcm2To1 => (
+            FilterType::Iir, 16000.0, 4,
+            Coefficients::IirParallel {
+                gain: 1.0,
+                direct: iir_coeffs::G712_16K_K,
+                b: iir_coeffs::G712_16K_B.to_vec(),
+                c: iir_coeffs::G712_16K_C.to_vec(),
+            },
+            1, 2, 1.0,
+        ),
+        FilterId::Pcm1To2 => (
+            FilterType::Iir, 8000.0, 4,
+            Coefficients::IirParallel {
+                gain: 1.0,
+                direct: iir_coeffs::G712_16K_K,
+                b: iir_coeffs::G712_16K_B.to_vec(),
+                c: iir_coeffs::G712_16K_C.to_vec(),
+            },
+            2, 1, 1.0,
         ),
         FilterId::DirDCRemoval => (
             FilterType::Iir, 48000.0, 2,
@@ -506,10 +623,14 @@ pub fn filter_info(filter_id: FilterId) -> Option<FilterInfo> {
 pub fn list_filter_ids() -> Vec<FilterId> {
     use FilterId::*;
     vec![
-        HQDown2To1, HQDown3To1, FlatBandPass,
+        HQDown2To1, HQDown3To1, HQUp1To2, HQUp1To3,
+        FlatBandPass, FlatBandPass1, FlatBandPass1To2,
         IRS8, IRS16, ModIRS16, ModIRS48,
+        Msin16k, Pso8k, Dsm16k, Hirs16, TiaIrs8, RxIrs8, RxIrs16,
+        P341_16k, Bp5k16k, Bp100_5k16k, Bp14k32k, Bp20k48k,
         LP1p5_48k, LP35_48k, LP7_48k, LP10_48k, LP12_48k, LP14_48k, LP20_48k,
-        G712_8k, DirDCRemoval, DirLP3To1, DirLP1To3, CascLP3To1, CascLP1To3,
+        G712_8k, Pcm16k, Pcm2To1, Pcm1To2,
+        DirDCRemoval, DirLP3To1, DirLP1To3, CascLP3To1, CascLP1To3,
     ]
 }
 

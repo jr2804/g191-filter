@@ -215,6 +215,162 @@ INDIVIDUAL_FILTERS = [
         "f_min": 50,
         "y_domain": (-120, 15),
     },
+    # Weighting / Measurement FIR Family
+    {
+        "id": "msin16khz",
+        "sr": 16000,
+        "title": "MSIN High-Pass Weighting (16 kHz)",
+        "color": "#e69f00",
+        "f_min": 50,
+        "y_domain": (-90, 10),
+    },
+    {
+        "id": "psophometric_8khz",
+        "sr": 8000,
+        "title": "Psophometric Weighting (8 kHz)",
+        "color": "#cc79a7",
+        "f_min": 50,
+        "y_domain": (-100, 10),
+    },
+    {
+        "id": "dsm16khz",
+        "sr": 16000,
+        "title": "Delta-Sigma Modulation Filter (16 kHz)",
+        "color": "#56b4e9",
+        "f_min": 50,
+        "y_domain": (-60, 10),
+    },
+    {
+        "id": "hirs16khz",
+        "sr": 16000,
+        "title": "Half-Tilt IRS Filter (16 kHz)",
+        "color": "#f0e442",
+        "f_min": 50,
+        "y_domain": (-95, 10),
+    },
+    {
+        "id": "tia_irs8khz",
+        "sr": 8000,
+        "title": "TIA IRS Filter (8 kHz)",
+        "color": "#009e73",
+        "f_min": 50,
+        "y_domain": (-85, 10),
+    },
+    {
+        "id": "rx_irs8khz",
+        "sr": 8000,
+        "title": "Receive IRS Filter 8 kHz",
+        "color": "#d55e00",
+        "f_min": 50,
+        "y_domain": (-70, 10),
+    },
+    {
+        "id": "rx_irs16khz",
+        "sr": 16000,
+        "title": "Receive IRS Filter 16 kHz",
+        "color": "#e69f00",
+        "f_min": 50,
+        "y_domain": (-70, 10),
+    },
+    {
+        "id": "p341_16khz",
+        "sr": 16000,
+        "title": "P.341 Weighting Filter (16 kHz)",
+        "color": "#8b5cf6",
+        "f_min": 50,
+        "y_domain": (-75, 10),
+    },
+    # Band-Pass FIR Family
+    {
+        "id": "bp5k_16khz",
+        "sr": 16000,
+        "title": "Band-Pass 50 Hz-5 kHz (16 kHz)",
+        "color": "#0072B2",
+        "f_min": 50,
+        "y_domain": (-80, 10),
+    },
+    {
+        "id": "bp100_5k_16khz",
+        "sr": 16000,
+        "title": "Band-Pass 100 Hz-5 kHz (16 kHz)",
+        "color": "#009E73",
+        "f_min": 50,
+        "y_domain": (-80, 10),
+    },
+    {
+        "id": "bp14k_32khz",
+        "sr": 32000,
+        "title": "Band-Pass 50 Hz-14 kHz (32 kHz)",
+        "color": "#56B4E9",
+        "f_min": 50,
+        "y_domain": (-80, 10),
+    },
+    {
+        "id": "bp20k_48khz",
+        "sr": 48000,
+        "title": "Band-Pass 20 Hz-20 kHz (48 kHz)",
+        "color": "#D55E00",
+        "f_min": 50,
+        "y_domain": (-80, 10),
+    },
+    # Upsampler FIR Family
+    {
+        "id": "hq_up_1_to_2",
+        "sr": 8000,
+        "title": "HQ Upsampler 1:2 (8 kHz)",
+        "color": "#0284c7",
+        "f_min": 50,
+        "y_domain": (-100, 10),
+    },
+    {
+        "id": "hq_up_1_to_3",
+        "sr": 8000,
+        "title": "HQ Upsampler 1:3 (8 kHz)",
+        "color": "#0369a1",
+        "f_min": 50,
+        "y_domain": (-100, 10),
+    },
+    {
+        "id": "flat_1_to_2",
+        "sr": 8000,
+        "title": "Flat Band-Pass Upsampler 1:2 (8 kHz)",
+        "color": "#0d9488",
+        "f_min": 50,
+        "y_domain": (-80, 10),
+    },
+    {
+        "id": "flat1",
+        "sr": 8000,
+        "title": "Flat Band-Pass 1:1 Filter (8 kHz)",
+        "color": "#14b5a0",
+        "f_min": 50,
+        "y_domain": (-80, 10),
+    },
+    # PCM IIR Family
+    {
+        "id": "stdpcm_16khz",
+        "sr": 16000,
+        "title": "Standard PCM Filter (16 kHz)",
+        "color": "#8b5cf6",
+        "f_min": 50,
+        "y_domain": (-60, 20),
+    },
+    {
+        "id": "stdpcm_2_to_1",
+        "sr": 16000,
+        "title": "Standard PCM 2:1 Downsampling (16 kHz)",
+        "color": "#a78bfa",
+        "f_min": 50,
+        "y_domain": (-60, 20),
+    },
+    {
+        "id": "stdpcm_1_to_2",
+        "sr": 8000,
+        "title": "Standard PCM 1:2 Upsampling (8 kHz)",
+        "color": "#c4b5fd",
+        "f_min": 50,
+        "y_domain": (-60, 20),
+    },
 ]
 
 
@@ -228,6 +384,7 @@ def main() -> None:
     generate_single_charts()
     print("Generating family comparison charts...")
     generate_group_charts()
+    generate_group_charts_new_families()
     print(f"All figures successfully created in {OUT_DIR}/")
 
 
@@ -347,7 +504,78 @@ def generate_group_charts() -> None:
     ax.grid(True, which="both", alpha=0.4)
     ax.legend()
     _apply_freq_ticks(ax, 8000)
-    _finalize(fig, OUT_DIR / "telecom_family.svg")
+
+def generate_group_charts_new_families() -> None:
+    """Family charts for the weighting, band-pass, upsampler, and PCM families."""
+    # 5. Weighting / Measurement FIR Family
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    for fid, sr, lbl, col, ls in [
+        ("msin16khz", 16000, "MSIN HP", "#e69f00", "-"),
+        ("psophometric_8khz", 8000, "Psophometric", "#cc79a7", "--"),
+        ("dsm16khz", 16000, "Delta-Sigma", "#56b4e9", "-"),
+        ("hirs16khz", 16000, "Half-Tilt IRS", "#f0e442", "-."),
+        ("tia_irs8khz", 8000, "TIA IRS", "#009e73", "-"),
+        ("rx_irs8khz", 8000, "Rx IRS 8k", "#d55e00", "--"),
+        ("rx_irs16khz", 16000, "Rx IRS 16k", "#e69f00", "-"),
+        ("p341_16khz", 16000, "P.341", "#8b5cf6", "-."),
+    ]:
+        w, m = _response(fid, 2048, sr, 10)
+        ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
+    ax.set(ylabel="Magnitude (dB)", title="Weighting / Measurement FIR Family", xlim=(10, 8000), ylim=(-100, 10))
+    ax.set_xlabel("Frequency (Hz)", labelpad=40)
+    ax.grid(True, which="both", alpha=0.4)
+    ax.legend(ncol=2)
+    _apply_freq_ticks(ax, 16000)
+    _finalize(fig, OUT_DIR / "weighting_family.svg")
+
+    # 6. Band-Pass FIR Family
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    for fid, sr, lbl, col, ls in [
+        ("bp5k_16khz", 16000, "BP 50Hz-5kHz", "#0072B2", "-"),
+        ("bp100_5k_16khz", 16000, "BP 100Hz-5kHz", "#009E73", "--"),
+        ("bp14k_32khz", 32000, "BP 50Hz-14kHz", "#56B4E9", "-"),
+        ("bp20k_48khz", 48000, "BP 20Hz-20kHz", "#D55E00", "-."),
+    ]:
+        w, m = _response(fid, 2048, sr, 50)
+        ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
+    ax.set(ylabel="Magnitude (dB)", title="Band-Pass FIR Family", xlim=(50, 24000), ylim=(-80, 10))
+    ax.set_xlabel("Frequency (Hz)", labelpad=40)
+    ax.grid(True, which="both", alpha=0.4)
+    ax.legend()
+    _apply_freq_ticks(ax, 48000)
+    _finalize(fig, OUT_DIR / "bandpass_family.svg")
+
+    # 7. Upsampler FIR Family
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    for fid, sr, lbl, col, ls in [
+        ("hq_up_1_to_2", 8000, "HQ Up 1:2", "#0284c7", "-"),
+        ("hq_up_1_to_3", 8000, "HQ Up 1:3", "#0369a1", "--"),
+        ("flat_1_to_2", 8000, "Flat Up 1:2", "#0d9488", "-"),
+    ]:
+        w, m = _response(fid, 2048, sr, 50)
+        ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
+    ax.set(ylabel="Magnitude (dB)", title="Upsampler FIR Family", xlim=(50, 4000), ylim=(-100, 10))
+    ax.set_xlabel("Frequency (Hz)", labelpad=40)
+    ax.grid(True, which="both", alpha=0.4)
+    ax.legend()
+    _apply_freq_ticks(ax, 8000)
+    _finalize(fig, OUT_DIR / "upsampler_family.svg")
+
+    # 8. PCM IIR Family
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    for fid, sr, lbl, col, ls in [
+        ("stdpcm_16khz", 16000, "PCM 16kHz", "#8b5cf6", "-"),
+        ("stdpcm_2_to_1", 16000, "PCM 2:1", "#a78bfa", "--"),
+        ("stdpcm_1_to_2", 8000, "PCM 1:2", "#c4b5fd", "-"),
+    ]:
+        w, m = _response(fid, 2048, sr, 50)
+        ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
+    ax.set(ylabel="Magnitude (dB)", title="Standard PCM IIR Family", xlim=(50, 8000), ylim=(-60, 20))
+    ax.set_xlabel("Frequency (Hz)", labelpad=40)
+    ax.grid(True, which="both", alpha=0.4)
+    ax.legend()
+    _apply_freq_ticks(ax, 16000)
+    _finalize(fig, OUT_DIR / "pcm_family.svg")
 
 
 def _apply_freq_ticks(ax: plt.Axes, sr: int) -> None:

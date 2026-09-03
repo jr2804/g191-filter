@@ -65,19 +65,21 @@ fn filter_wave(
     } else {
         match &config.coefficients {
             Coefficients::Fir { h0 } => {
-                let mut filter = FirFilter::new(h0, config.gain, config.ratio_den, 'D');
+                let hswitch = if config.ratio_num > config.ratio_den { 'U' } else { 'D' };
+                let dwn_up = if hswitch == 'U' { config.ratio_num } else { config.ratio_den };
+                let mut filter = FirFilter::new(h0, config.gain, dwn_up, hswitch);
                 filter.process_block(&resampled)
             }
             Coefficients::IirParallel { gain, direct, b, c } => {
-                let mut filter = IirFilter::new(*gain, *direct, b, c, config.ratio_den);
+                let mut filter = IirFilter::new(*gain, *direct, b, c, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 filter.process_block(&resampled)
             }
             Coefficients::IirCascade { gain, b, a } => {
-                let mut filter = CascadeIirFilter::new(*gain, b, a, config.ratio_den);
+                let mut filter = CascadeIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 filter.process_block(&resampled)
             }
             Coefficients::IirDirect { gain, b, a } => {
-                let mut filter = DirectIirFilter::new(*gain, b, a, config.ratio_den);
+                let mut filter = DirectIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 filter.process_block(&resampled)
             }
         }
@@ -112,19 +114,21 @@ fn filter_array<'py>(
             .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
         match &config.coefficients {
             Coefficients::Fir { h0 } => {
-                let mut filter = FirFilter::new(h0, config.gain, config.ratio_den, 'D');
+                let hswitch = if config.ratio_num > config.ratio_den { 'U' } else { 'D' };
+                let dwn_up = if hswitch == 'U' { config.ratio_num } else { config.ratio_den };
+                let mut filter = FirFilter::new(h0, config.gain, dwn_up, hswitch);
                 filter.process_block(&input)
             }
             Coefficients::IirParallel { gain, direct, b, c } => {
-                let mut filter = IirFilter::new(*gain, *direct, b, c, config.ratio_den);
+                let mut filter = IirFilter::new(*gain, *direct, b, c, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 filter.process_block(&input)
             }
             Coefficients::IirCascade { gain, b, a } => {
-                let mut filter = CascadeIirFilter::new(*gain, b, a, config.ratio_den);
+                let mut filter = CascadeIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 filter.process_block(&input)
             }
             Coefficients::IirDirect { gain, b, a } => {
-                let mut filter = DirectIirFilter::new(*gain, b, a, config.ratio_den);
+                let mut filter = DirectIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                 filter.process_block(&input)
             }
         }
@@ -273,15 +277,15 @@ fn export_impulse_response(
             let dirac = vec![1.0; length];
             let filtered = match &config.coefficients {
                 Coefficients::IirParallel { gain, direct, b, c } => {
-                    let mut filter = IirFilter::new(*gain, *direct, b, c, config.ratio_den);
+                    let mut filter = IirFilter::new(*gain, *direct, b, c, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                     filter.process_block(&dirac)
                 }
                 Coefficients::IirCascade { gain, b, a } => {
-                    let mut filter = CascadeIirFilter::new(*gain, b, a, config.ratio_den);
+                    let mut filter = CascadeIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                     filter.process_block(&dirac)
                 }
                 Coefficients::IirDirect { gain, b, a } => {
-                    let mut filter = DirectIirFilter::new(*gain, b, a, config.ratio_den);
+                    let mut filter = DirectIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
                     filter.process_block(&dirac)
                 }
                 Coefficients::Fir { .. } => unreachable!(),

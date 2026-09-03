@@ -5,7 +5,7 @@ title: Filter Catalog & Specifications
 ## ITU-T G.191 Filter Catalog & Specifications
 
 This reference provides technical specifications, transfer function characteristics,
-and frequency response figures for all 20 standard ITU-T G.191 filters implemented in `g191-filter`.
+and frequency response figures for all 39 standard ITU-T G.191 filters implemented in `g191-filter`.
 
 ### Filter Families at a Glance
 
@@ -36,6 +36,28 @@ mindmap
       flat_band_pass
       g712_8khz
       dir_dc_removal
+      stdpcm_16khz
+      stdpcm_2_to_1
+      stdpcm_1_to_2
+    Weighting and Measurement
+      msin16khz
+      psophometric_8khz
+      dsm16khz
+      hirs16khz
+      tia_irs8khz
+      rx_irs8khz
+      rx_irs16khz
+      p341_16khz
+    Band-Pass (Wideband)
+      bp5k_16khz
+      bp100_5k_16khz
+      bp14k_32khz
+      bp20k_48khz
+    Upsampling (FIR)
+      hq_up_1_to_2
+      hq_up_1_to_3
+      flat_1_to_2
+      flat1
 ```
 
 ---
@@ -267,7 +289,7 @@ Filters for voiceband conditioning, standard PCM channel emulation, and DC offse
 | --------- | ---- | ------------ | ----------- | ----------- |
 | `flat_band_pass` | FIR | 168 taps | 8 kHz | Brickwall 300–3400 Hz bandpass with flat in-band response |
 | `g712_8khz` | IIR Parallel | 4 Biquads (Order 8) | 8 kHz | ITU-T G.712 PCM channel filter (attenuation and group delay template) |
-| `dir_dc_removal` | IIR Direct | 1st Order ($a=[1, -1], b=[1, -0.985]$) | 8 kHz | High-pass DC offset notch filter |
+| `dir_dc_removal` | IIR Direct | 1st Order ($b=[1, -1], a=[1, -0.985]$) | 8 kHz | High-pass DC offset notch filter |
 
 #### Individual Responses
 
@@ -284,4 +306,194 @@ Filters for voiceband conditioning, standard PCM channel emulation, and DC offse
 === "dir_dc_removal"
     <p align="center">
       <img src="../assets/figures/dir_dc_removal.svg" alt="dir_dc_removal" width="700">
+    </p>
+
+---
+
+### 5. Standard PCM IIR Filters
+
+The `stdpcm_*` family provides the ITU-T standard PCM channel reference filter in parallel-form biquad at multiple sample rates and rate-change factors. They share the same coefficients as `g712_8khz` (G.712 PCM weighting, 16 kHz design) but expose 1:1, 2:1, and 1:2 rate variants.
+
+#### Family Response
+
+<p align="center">
+  <img src="../assets/figures/pcm_family.svg" alt="PCM Family Response" width="740">
+</p>
+
+#### Specifications
+
+| Filter ID | Type | Native Rate | Ratio | Description |
+| --------- | ---- | ----------- | ----- | ----------- |
+| `stdpcm_16khz` | IIR Parallel | 16 kHz | 1:1 | Standard PCM reference filter, 16 kHz |
+| `stdpcm_2_to_1` | IIR Parallel | 16 kHz → 8 kHz | 1:2 (down) | Standard PCM downsampling by 2 |
+| `stdpcm_1_to_2` | IIR Parallel | 8 kHz → 16 kHz | 2:1 (up) | Standard PCM upsampling by 2 (zero-insertion IIR up-kernel) |
+
+#### Individual Responses
+
+=== "stdpcm_16khz"
+    <p align="center">
+      <img src="../assets/figures/stdpcm_16khz.svg" alt="stdpcm_16khz" width="700">
+    </p>
+
+=== "stdpcm_2_to_1"
+    <p align="center">
+      <img src="../assets/figures/stdpcm_2_to_1.svg" alt="stdpcm_2_to_1" width="700">
+    </p>
+
+=== "stdpcm_1_to_2"
+    <p align="center">
+      <img src="../assets/figures/stdpcm_1_to_2.svg" alt="stdpcm_1_to_2" width="700">
+    </p>
+
+---
+
+### 6. Weighting and Measurement FIR Family
+
+These filters implement ITU-T measurement weightings and noise-psophometry weighting for instrumentational and assessment use.
+
+#### Family Response
+
+<p align="center">
+  <img src="../assets/figures/weighting_family.svg" alt="Weighting Family Response" width="740">
+</p>
+
+#### Specifications
+
+| Filter ID | Type | Taps | Native Rate | Description |
+| --------- | ---- | ---- | ----------- | ----------- |
+| `msin16khz` | FIR | 185 | 16 kHz | MSIN (mobile-station-in) high-pass weighting |
+| `psophometric_8khz` | FIR | 156 | 8 kHz | Psophometric noise weighting (telephony) |
+| `dsm16khz` | FIR | 207 | 16 kHz | Delta-Sigma modulation reconstruction filter |
+| `hirs16khz` | FIR | 200 | 16 kHz | Half-Tilt IRS (HT-IRS) send weighting, 16 kHz |
+| `tia_irs8khz` | FIR | 151 | 8 kHz | TIA-IRS receive weighting, 8 kHz |
+| `rx_irs8khz` | FIR | 75 | 8 kHz | Receive side of modified IRS, 8 kHz |
+| `rx_irs16khz` | FIR | 148 | 16 kHz | Receive side of modified IRS, 16 kHz |
+| `p341_16khz` | FIR | 592 | 16 kHz | ITU-T P.341 send-part weighting, 16 kHz |
+
+#### Individual Responses
+
+=== "msin16khz"
+    <p align="center">
+      <img src="../assets/figures/msin16khz.svg" alt="msin16khz" width="700">
+    </p>
+
+=== "psophometric_8khz"
+    <p align="center">
+      <img src="../assets/figures/psophometric_8khz.svg" alt="psophometric_8khz" width="700">
+    </p>
+
+=== "dsm16khz"
+    <p align="center">
+      <img src="../assets/figures/dsm16khz.svg" alt="dsm16khz" width="700">
+    </p>
+
+=== "hirs16khz"
+    <p align="center">
+      <img src="../assets/figures/hirs16khz.svg" alt="hirs16khz" width="700">
+    </p>
+
+=== "tia_irs8khz"
+    <p align="center">
+      <img src="../assets/figures/tia_irs8khz.svg" alt="tia_irs8khz" width="700">
+    </p>
+
+=== "rx_irs8khz"
+    <p align="center">
+      <img src="../assets/figures/rx_irs8khz.svg" alt="rx_irs8khz" width="700">
+    </p>
+
+=== "rx_irs16khz"
+    <p align="center">
+      <img src="../assets/figures/rx_irs16khz.svg" alt="rx_irs16khz" width="700">
+    </p>
+
+=== "p341_16khz"
+    <p align="center">
+      <img src="../assets/figures/p341_16khz.svg" alt="p341_16khz" width="700">
+    </p>
+
+---
+
+### 7. Wideband Band-Pass FIR Family
+
+Brickwall-style band-pass filters for splitting signal bands (P.50-type measurement, speech band limiting, wideband speech codec pre-processing).
+
+#### Family Response
+
+<p align="center">
+  <img src="../assets/figures/bandpass_family.svg" alt="Band-Pass Family Response" width="740">
+</p>
+
+#### Specifications
+
+| Filter ID | Type | Taps | Native Rate | Description |
+| --------- | ---- | ---- | ----------- | ----------- |
+| `bp5k_16khz` | FIR | 592 | 16 kHz | Band-pass 50 Hz–5 kHz |
+| `bp100_5k_16khz` | FIR | 603 | 16 kHz | Band-pass 100 Hz–5 kHz |
+| `bp14k_32khz` | FIR | 1119 | 32 kHz | Band-pass 50 Hz–14 kHz |
+| `bp20k_48khz` | FIR | 4001 | 48 kHz | Band-pass 20 Hz–20 kHz (fullband) |
+
+#### Individual Responses
+
+=== "bp5k_16khz"
+    <p align="center">
+      <img src="../assets/figures/bp5k_16khz.svg" alt="bp5k_16khz" width="700">
+    </p>
+
+=== "bp100_5k_16khz"
+    <p align="center">
+      <img src="../assets/figures/bp100_5k_16khz.svg" alt="bp100_5k_16khz" width="700">
+    </p>
+
+=== "bp14k_32khz"
+    <p align="center">
+      <img src="../assets/figures/bp14k_32khz.svg" alt="bp14k_32khz" width="700">
+    </p>
+
+=== "bp20k_48khz"
+    <p align="center">
+      <img src="../assets/figures/bp20k_48khz.svg" alt="bp20k_48khz" width="700">
+    </p>
+
+---
+
+### 8. Upsampling FIR Family
+
+High-quality interpolation filters for 1:2 and 1:3 upsampling, reusing the HQ down-sampler coefficient set with the `fir_upsampling_kernel` and appropriate gain.
+
+#### Family Response
+
+<p align="center">
+  <img src="../assets/figures/upsampler_family.svg" alt="Upsampler Family Response" width="740">
+</p>
+
+#### Specifications
+
+| Filter ID | Type | Taps | Native Rate | Ratio | Description |
+| --------- | ---- | ---- | ----------- | ----- | ----------- |
+| `hq_up_1_to_2` | FIR | 118 | 8 kHz | 2:1 (up) | High-quality 1:2 upsampler (reuses `hq_down_2_to_1` coeffs, gain 2.0) |
+| `hq_up_1_to_3` | FIR | 168 | 8 kHz | 3:1 (up) | High-quality 1:3 upsampler (reuses `hq_down_3_to_1` coeffs, gain 3.0) |
+| `flat_1_to_2` | FIR | 168 | 8 kHz | 2:1 (up) | Flat band-pass 1:2 upsampler |
+| `flat1` | FIR | 168 | 8 kHz | 1:1 | Flat band-pass 1:1 (pass-through filter) |
+
+#### Individual Responses
+
+=== "hq_up_1_to_2"
+    <p align="center">
+      <img src="../assets/figures/hq_up_1_to_2.svg" alt="hq_up_1_to_2" width="700">
+    </p>
+
+=== "hq_up_1_to_3"
+    <p align="center">
+      <img src="../assets/figures/hq_up_1_to_3.svg" alt="hq_up_1_to_3" width="700">
+    </p>
+
+=== "flat_1_to_2"
+    <p align="center">
+      <img src="../assets/figures/flat_1_to_2.svg" alt="flat_1_to_2" width="700">
+    </p>
+
+=== "flat1"
+    <p align="center">
+      <img src="../assets/figures/flat1.svg" alt="flat1" width="700">
     </p>

@@ -1,0 +1,2 @@
+{"id":"int-ebe0487082a899c1b23c4ddbdc129819","kind":"field_change","created_at":"2026-09-03T13:17:37.5405055Z","actor":"Jan.Reimes","issue_id":"g191-filter-e8r","extra":{"field":"status","new_value":"closed","old_value":"open","reason":"duplicate of 3m7"}}
+{"id":"int-426fa195b9259c9bf1fbb669c0900b9f","kind":"field_change","created_at":"2026-09-03T13:17:39.3772815Z","actor":"Jan.Reimes","issue_id":"g191-filter-3m7","extra":{"field":"status","new_value":"in_progress","old_value":"open"}}

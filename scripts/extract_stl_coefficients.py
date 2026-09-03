@@ -32,6 +32,12 @@ def main() -> None:
     flat = (STL_DIR / "fir" / "fir-flat.c").read_text(encoding="utf-8", errors="replace")
     irs = (STL_DIR / "fir" / "fir-irs.c").read_text(encoding="utf-8", errors="replace")
     lp = (STL_DIR / "fir" / "fir-LP.c").read_text(encoding="utf-8", errors="replace")
+    msin = (STL_DIR / "fir" / "fir-msin.c").read_text(encoding="utf-8", errors="replace")
+    pso = (STL_DIR / "fir" / "fir-pso.c").read_text(encoding="utf-8", errors="replace")
+    dsm = (STL_DIR / "fir" / "fir-dsm.c").read_text(encoding="utf-8", errors="replace")
+    hirs = (STL_DIR / "fir" / "fir-hirs.c").read_text(encoding="utf-8", errors="replace")
+    tia = (STL_DIR / "fir" / "fir-tia.c").read_text(encoding="utf-8", errors="replace")
+    wb = (STL_DIR / "fir" / "fir-wb.c").read_text(encoding="utf-8", errors="replace")
 
     fir_specs = [
         ("HQ_DOWN_2_TO_1", "h02", "f24", "High-quality 2:1 downsampling FIR, 16 kHz"),
@@ -48,13 +54,34 @@ def main() -> None:
         ("LP12_48K", "LP12_48khz_coeff", "float", "Low-pass 12 kHz, 48 kHz"),
         ("LP14_48K", "LP14_48khz_coeff", "float", "Low-pass 14 kHz, 48 kHz"),
         ("LP20_48K", "LP20_48khz_coeff", "float", "Low-pass 20 kHz, 48 kHz"),
+        # --- weighting / measurement filters ---
+        ("MSIN_16K", "msin_coef", "f24", "MSIN mobile-station-in background-noise high-pass, 16 kHz"),
+        ("PSO_8K", "psophometric_8khz_coeff", "float", "Psophometric weighting, 8 kHz"),
+        ("DSM_16K", "dsm_fil_coef", "float", "Delta-SM modulation filter, 16 kHz"),
+        # --- additional IRS variants ---
+        ("HIRS16", "h0_HT_IRS16", "float", "IRS send weighting (ht), 16 kHz"),
+        ("TIA_IRS8", "h0IRS8", "f24", "TIA IRS receive weighting, 8 kHz (fir-tia.c)"),
+        ("RX_MOD_IRS8", "rx_mod_irs8_coef", "float", "Receiving part of modified IRS, 8 kHz"),
+        ("RX_MOD_IRS16", "rx_mod_irs16_coef", "float", "Receiving part of modified IRS, 16 kHz"),
+        # --- wideband band-passes (fir-wb.c) ---
+        ("P341_16K", "p341_16khz_coeff", "float", "ITU-T P.341 send-part weighting, 16 kHz"),
+        ("BP5K_16K", "bp5k_16khz_coeff", "float", "Band-pass 50 Hz-5 kHz, 16 kHz"),
+        ("BP100_5K_16K", "bp100_5k_16khz_coeff", "float", "Band-pass 100 Hz-5 kHz, 16 kHz"),
+        ("BP14K_32K", "bp14k_32khz_coeff", "float", "Band-pass 50 Hz-14 kHz, 32 kHz"),
+        ("BP20K_48K", "bp20k_48khz_coeff", "float", "Band-pass 20 Hz-20 kHz, 48 kHz"),
     ]
     for const, cname, scale, doc in fir_specs:
-        src = flat if cname in ("h02", "h03", "flat_coef") else (irs if cname.startswith(("h0IRS", "mod_irs")) else lp)
+        src = flat if cname in ("h02", "h03", "flat_coef") else (
+            irs if cname.startswith(("h0IRS", "mod_irs", "rx_mod")) else (
+            tia if const == "TIA_IRS8" else (
+            hirs if const == "HIRS16" else (
+            msin if const == "MSIN_16K" else (
+            pso if const == "PSO_8K" else (
+            dsm if const == "DSM_16K" else (
+            wb if cname.startswith(("p341", "bp")) else lp)))))))
         vals = extract_1d(src, cname, scale)
         if vals is None:
             print(f"WARN: FIR {cname} not found")
-            continue
         out.append(rust_1d(const, vals, doc))
         out.append("")
     out.append("}")
@@ -127,9 +154,9 @@ def extract_1d(text: str, name: str, scale: str) -> list[float] | None:
 
 
 def parse_f24(text: str) -> list[float]:
-    """Parse f24/f16-scaled integer coefficients."""
+    """Parse f24/f16-scaled integer coefficients (also bare /32768 divisor)."""
     values = []
-    for m in re.finditer(r"(-?\d+\.?\d*)\s*/\s*(f24|f16)", text):
+    for m in re.finditer(r"(-?\d+\.?\d*)\s*/\s*(f24|f16|32768)", text):
         num = float(m.group(1))
         scale = F24 if m.group(2) == "f24" else F16
         values.append(num / scale)
@@ -182,6 +209,7 @@ def parse_float(text: str) -> list[float]:
     values = []
     # Normalize (F) prefix and scientific notation
     normalized = re.sub(r"\s*\(F\)\s*", "", text)
+    normalized = re.sub(r"(-)\s+(\d)", lambda m: m.group(1) + m.group(2), normalized)  # "(F) - 0.06" -> "-0.06"
     for elem in normalized.split(","):
         elem = elem.strip()
         if not elem:

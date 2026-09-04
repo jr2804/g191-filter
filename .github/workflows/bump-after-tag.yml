@@ -1,20 +1,21 @@
 name: bump-after-tag
-# When the release workflow creates and pushes a CalVer tag, this workflow
-# stamps the same version into Cargo.toml, pyproject.toml and
-# python/g191_filter/_version.py as a follow-up commit on main. Without
-# this step, HEAD of main keeps the "0.0.0" placeholder, so installs via
-# `uv add git+https://github.com/jr2804/g191-filter.git` (which builds
-# from HEAD, not from a tag) report `g191-filter==0.0.0` regardless of
-# what tag was pushed.
+# The release workflow stamps version numbers into a *throwaway runner
+# checkout* — those files never reach HEAD of main. Without a follow-up
+# commit, installs via `uv add git+https://github.com/jr2804/g191-filter.git`
+# (which build from HEAD, not a tag) report `g191-filter==0.0.0` no matter
+# which tag was released.
+#
+# This workflow fires when `release` completes, reads the CalVer tag the
+# release just published, and stamps it into Cargo.toml, pyproject.toml and
+# python/g191_filter/_version.py as a follow-up commit on main.
+#
+# NOTE: a `on: push: tags:` trigger was tried first — it never fired because
+# the tag was pushed by release.yml using GITHUB_TOKEN, and GitHub suppresses
+# downstream workflow triggers for events caused by that token.
 on:
-  push:
-    tags:
-      # GitHub's tag filter uses fnmatch — `+` is a literal, not a quantifier.
-      # fnmatch requires the whole tag name to match; each segment is
-      # `digit(s)`, joined by literal dots. Covers CalVer YYYY.M.N for years
-      # 1900-2099. The workflow body validates the full format before
-      # stamping.
-      - '[0-9][0-9]*.[0-9]*.[0-9]*'
+  workflow_run:
+    workflows: [release]
+    types: [completed]
 concurrency:
   group: bump-${{ github.ref }}
   cancel-in-progress: false
@@ -22,25 +23,26 @@ permissions:
   contents: write
 jobs:
   bump:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Need history to extract the version from the tag's commit.
+          # Need history to resolve the newest CalVer tag.
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Stamp version files and push bump commit
         shell: bash
         run: |
           set -euo pipefail
-          # Tag name like "2026.9.4" -> version 2026.9.4
-          version="${GITHUB_REF_NAME}"
-          if ! printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Tag $version does not match CalVer; nothing to do."
+          # The release workflow just tagged HEAD. Read that tag's version.
+          version="$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)"
+          if [ -z "$version" ]; then
+            echo "No CalVer tag on HEAD; nothing to do."
             exit 0
           fi
-          # Skip if the commit already has the stamp (re-run after a manual retry).
+          # Skip if the commit already carries the stamp (retry after a manual fix).
           current="$(sed -nE 's/^version = "([^"]*)"$/\1/p' Cargo.toml | head -n1 || true)"
           if [ "$current" = "$version" ]; then
             echo "Cargo.toml already at $version; skipping."

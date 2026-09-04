@@ -24,6 +24,7 @@ from .g191_filter import (  # noqa: F401
 get_filter_info = get_filter_info_py  # alias
 
 try:
-    __version__ = importlib.metadata.version(__name__)
+    __version__ = importlib.metadata.version("g191-filter")
 except importlib.metadata.PackageNotFoundError:
-    __version__ = "0.0.0"  # Fallback for development mode
+    # Editable install (maturin develop without --uv): no dist-info.
+    from ._version import __version__ as __version__

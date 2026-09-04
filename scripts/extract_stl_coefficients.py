@@ -8,6 +8,7 @@ script runs against a manual clone of the reference code (see scripts/clone_stl.
 and only extracts the numeric coefficient values for porting.
 """
 
+import contextlib
 import pathlib
 import re
 
@@ -218,10 +219,8 @@ def parse_float(text: str) -> list[float]:
         if m:
             values.append(float(m.group(1)))
         else:
-            try:
+            with contextlib.suppress(ValueError):
                 values.append(float(elem))
-            except ValueError:
-                pass
     return values
 
 

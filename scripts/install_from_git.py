@@ -31,6 +31,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CARGO_TOML = ROOT / "Cargo.toml"
+PYPROJECT_TOML = ROOT / "pyproject.toml"
+VERSION_PY = ROOT / "python" / "g191_filter" / "_version.py"
 TAG_PATTERN = re.compile(r"^(\d{4}\.\d{1,2}\.\d+)$")
 _GIT_BIN = shutil.which("git") or "git"
 
@@ -50,19 +52,34 @@ def _git_version(cwd: Path) -> str | None:
     return tag if TAG_PATTERN.match(tag) else None
 
 
-def _set_cargo_version(version: str) -> None:
-    """Replace the `[package] version = "..."` line in Cargo.toml."""
-    text = CARGO_TOML.read_text(encoding="utf-8")
-    new_text, count = re.subn(
+def _set_file_version(path: Path, pattern: str, replacement: str, label: str) -> None:
+    """Apply one regex version substitution to *path*; exit on no match."""
+    text = path.read_text(encoding="utf-8")
+    new_text, count = re.subn(pattern, replacement, text, count=1, flags=re.MULTILINE)
+    if count != 1:
+        sys.exit(f'Could not patch {label} in {path}; set it to the version manually and rerun.')
+    path.write_text(new_text, encoding="utf-8")
+
+def _set_versions(version: str) -> None:
+    """Stamp the version into Cargo.toml, pyproject.toml and _version.py."""
+    _set_file_version(
+        CARGO_TOML,
         r'^(version\s*=\s*)"[^"]*"',
         rf'\1"{version}"',
-        text,
-        count=1,
-        flags=re.MULTILINE,
+        '`version = "..."`',
     )
-    if count != 1:
-        sys.exit(f'Could not find `version = "..."` line at top of {CARGO_TOML}; set it to "{version}" manually and rerun.')
-    CARGO_TOML.write_text(new_text, encoding="utf-8")
+    _set_file_version(
+        PYPROJECT_TOML,
+        r'^(version\s*=\s*)"[^"]*"',
+        rf'\1"{version}"',
+        '`version = "..."`',
+    )
+    _set_file_version(
+        VERSION_PY,
+        r'^(__version__\s*=\s*)"[^"]*"',
+        rf'\1"{version}"',
+        '`__version__ = "..."`',
+    )
 
 
 def _build(args: list[str]) -> int:
@@ -94,8 +111,8 @@ def main() -> None:
         sys.exit(f"No CalVer tag reachable from HEAD in {ROOT}; pass --version <YYYY.M.N> or create a tag first.")
 
     print(f"Detected version: {version}")
-    print(f"Patching {CARGO_TOML}")
-    _set_cargo_version(version)
+    print("Patching Cargo.toml, pyproject.toml, _version.py")
+    _set_versions(version)
 
     if ns.skip_build:
         print("--skip-build set; not invoking maturin develop.")

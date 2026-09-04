@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import numpy as np
+
 from g191_filter import filter_array
 
 BASE = Path(__file__).resolve().parents[1]
@@ -49,7 +49,7 @@ def main() -> None:
         # 1. Run STL reference
         ref_output = run_stl_reference(stl_type, REF_INPUT)
         if ref_output is None:
-            print(f"  Failed (STL reference error)")
+            print("  Failed (STL reference error)")
             failed += 1
             continue
 
@@ -58,10 +58,10 @@ def main() -> None:
 
         # 3. Compare (normalize both for comparison)
         if compare_signals(ref_output, our_output, tolerance=1e-2):
-            print(f"  PASS")
+            print("  PASS")
             passed += 1
         else:
-            print(f"  FAIL")
+            print("  FAIL")
             failed += 1
 
     # Also test impulse response for a few filters

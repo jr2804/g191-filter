@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
 import typer
 
+from g191_filter._version import __version__ as _stamped_version
 from g191_filter.cli import commands
 
 app = typer.Typer(
@@ -43,9 +44,10 @@ def _callback(
 def _get_version() -> str:
     """Get application version from package metadata."""
     try:
-        return version("g191_filter")
-    except Exception:
-        return "0.0.0"  # Fallback for development mode
+        return version("g191-filter")
+    except PackageNotFoundError:
+        # Editable install (maturin develop without --uv): no dist-info.
+        return _stamped_version
 
 
 def main() -> None:

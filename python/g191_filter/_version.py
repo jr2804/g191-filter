@@ -6,4 +6,4 @@ with Cargo.toml / pyproject.toml. Kept as a literal so that `g191_filter
 importlib.metadata has no dist-info to read.
 """
 
-__version__ = "0.0.0"
+__version__ = "2026.9.10"

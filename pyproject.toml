@@ -5,7 +5,7 @@ name = "g191-filter"
 # PKG-INFO agree. Local development leaves this at `0.0.0`; install from
 # a release tag (`uv add git+...@v2026.9.13`) for accurate metadata. For
 # arbitrary commits, run `python scripts/install_from_git.py` first.
-version = "0.0.0"
+version = "2026.9.10"
 description = "IIR/FIR filters according to Recommendation ITU-T G.191 (Software Tool Library). Provided at arbitrary sampling rates and in many formats"
 readme = "README.md"
 license = { text = "MIT" }

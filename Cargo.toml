@@ -4,7 +4,7 @@ name = "g191_filter_core"
 # scripts/install_from_git.py) rewrite this line before running maturin
 # build, together with pyproject.toml and python/g191_filter/_version.py.
 # Local dev builds get "0.0.0" (mismatch with releases is expected).
-version = "0.0.0"
+version = "2026.9.10"
 edition = "2021"
 license = "MIT"
 authors = ["Jan.Reimes <jan.reimes@head-acoustics.com>"]

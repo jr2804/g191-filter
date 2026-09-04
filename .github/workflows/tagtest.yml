@@ -1,0 +1,10 @@
+name: tagtest
+on:
+  push:
+    tags:
+      - '*'
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "tag pushed: ${{ github.ref_name }}"

@@ -61,6 +61,7 @@ nul
 *.pdb
 *.log
 *.exe
+*.pyd
 
 # mkdocs/zensical
 site/

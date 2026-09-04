@@ -1,0 +1,55 @@
+name: bump-after-tag
+# When the release workflow creates and pushes a CalVer tag, this workflow
+# stamps the same version into Cargo.toml, pyproject.toml and
+# python/g191_filter/_version.py as a follow-up commit on main. Without
+# this step, HEAD of main keeps the "0.0.0" placeholder, so installs via
+# `uv add git+https://github.com/jr2804/g191-filter.git` (which builds
+# from HEAD, not from a tag) report `g191-filter==0.0.0` regardless of
+# what tag was pushed.
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+concurrency:
+  group: bump-${{ github.ref }}
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Need history to extract the version from the tag's commit.
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Stamp version files and push bump commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Tag name like "2026.9.4" -> version 2026.9.4
+          version="${GITHUB_REF_NAME}"
+          if ! printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Tag $version does not match CalVer; nothing to do."
+            exit 0
+          fi
+          # Skip if the commit already has the stamp (re-run after a manual retry).
+          current="$(sed -nE 's/^version = "([^"]*)"$/\1/p' Cargo.toml | head -n1 || true)"
+          if [ "$current" = "$version" ]; then
+            echo "Cargo.toml already at $version; skipping."
+            exit 0
+          fi
+          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$version"'"/' Cargo.toml
+          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$version"'"/' pyproject.toml
+          sed -i.bak -E 's/^__version__ = "0\.0\.0"$/__version__ = "'"$version"'"/' python/g191_filter/_version.py
+          rm -f Cargo.toml.bak pyproject.toml.bak python/g191_filter/_version.py.bak
+          grep -q "^version = \"$version\"$" Cargo.toml
+          grep -q "^version = \"$version\"$" pyproject.toml
+          grep -q "^__version__ = \"$version\"$" python/g191_filter/_version.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml pyproject.toml python/g191_filter/_version.py
+          git commit -m "chore(release): stamp $version"
+          git push origin HEAD:main

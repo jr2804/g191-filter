@@ -11,7 +11,11 @@ concurrency:
 
 jobs:
   version:
-    if: ${{ github.ref == 'refs/heads/main' }}
+    # Skip when the push was itself a release-version stamp (bump-after-tag.yml
+    # commits "chore(release): stamp <ver>") — otherwise we'd loop forever.
+    if: >-
+      github.ref == 'refs/heads/main'
+      && !contains(github.event.head_commit.message, 'chore(release): stamp')
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}

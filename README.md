@@ -5,7 +5,8 @@
 
 <!-- markdownlint-disable MD033 -->
 <p align="center">
-  <a href="#"><img alt="Python 3.13+" src="https://img.shields.io/badge/python-3.13%2B-3776ab?logo=python"></a>
+  <a href="#"><img alt="Python 3.13, 3.14, 3.14t" src="https://img.shields.io/badge/python-3.13%20%7C%203.14%20%7C%203.14t-3776ab?logo=python&logoColor=white"></a>
+  <a href="#"><img alt="Free-threaded 3.14t" src="https://img.shields.io/badge/no--GIL-3.14t-30638b?logo=python&logoColor=white"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
   <a href="https://github.com/jr2804/g191-filter/actions"><img alt="CI" src="https://github.com/jr2804/g191-filter/actions/workflows/ci.yml/badge.svg"></a>
 </p>

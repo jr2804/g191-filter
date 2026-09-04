@@ -47,6 +47,10 @@ uvx --from git+https://github.com/jr2804/g191-filter.git g191-filter filter \
   --input-file speech.wav \
   --output-file speech_irs.wav
 
+# Pin to a release tag so the wheel version matches the source you cloned:
+uvx --from "git+https://github.com/jr2804/g191-filter.git@v2026.9.13" g191-filter filter \
+  --filter-id irs8khz --input-file speech.wav --output-file speech_irs.wav
+
 # Or inside a project environment with uv run:
 uv run --from git+https://github.com/jr2804/g191-filter.git g191-filter filter \
   --filter-id mod_irs16khz \
@@ -103,6 +107,19 @@ Full guides and references:
 - [Blockwise & Streaming Filtering Guide](https://jr2804.github.io/g191-filter/guides/blockwise_filtering/)
 - [API Reference](https://jr2804.github.io/g191-filter/reference/api/)
 - [Development & Contributing](https://jr2804.github.io/g191-filter/development/)
+
+### Installing from a non-tagged git ref
+
+`uv add git+...` (or `pip install git+...`) runs maturin against whatever
+`Cargo.toml` is at the pinned commit. The committed `Cargo.toml` placeholder
+is `0.0.0`, so non-tagged installs report `g191-filter==0.0.0`. To get the
+real CalVer in the wheel, either:
+
+- Pin to a release tag: `uv add "git+https://...@v2026.9.13"`, or
+- After cloning, run `uv run python scripts/install_from_git.py` which
+  patches `Cargo.toml` from the most recent reachable CalVer tag and
+  invokes `maturin develop --release` for you. Override with `--version
+  YYYY.M.N` if there is no reachable tag.
 
 ---
 

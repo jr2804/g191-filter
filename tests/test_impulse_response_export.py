@@ -31,23 +31,6 @@ import g191_filter as g191  # noqa: E402
 _TMP = Path(tempfile.mkdtemp(prefix="g191_ir_test_"))
 
 
-def _read_ir(filter_id: str, sample_rate: float) -> tuple[np.ndarray, int]:
-    out_path = _TMP / f"{filter_id}_{int(sample_rate)}.wav"
-    g191.export_impulse_response(filter_id, str(out_path), float(sample_rate), 0)
-    data, sr = sf.read(str(out_path), dtype="float64")
-    return np.asarray(data), sr
-
-
-def _passband_gain_db(b: np.ndarray, sr: int, freq_hz: float, n_fft: int | None = None) -> float:
-    """DTFT magnitude in dB at ``freq_hz`` (zero-padded to ``n_fft``)."""
-    if n_fft is None:
-        n_fft = max(1 << 18, 1 << math.ceil(math.log2(len(b)) + 4))
-    h = np.fft.rfft(b, n=n_fft)
-    freqs = np.fft.rfftfreq(n_fft, d=1.0 / sr)
-    idx = int(np.argmin(np.abs(freqs - freq_hz)))
-    return float(20.0 * np.log10(np.abs(h[idx]) + 1e-30))
-
-
 # -----------------------------------------------------------------------
 # Issue #1 — FIR was double-resampled at non-native sample rates
 # -----------------------------------------------------------------------
@@ -108,6 +91,23 @@ def test_export_impulse_response_fir_passband_gain_matches_native(filter_id: str
     assert diff < 1.0, (
         f"{filter_id}: native vs resampled passband gain mismatch at {freq} Hz: {gain_native:+.3f} dB vs {gain_resamp:+.3f} dB (diff {diff:.3f} dB)"
     )
+
+
+def _read_ir(filter_id: str, sample_rate: float) -> tuple[np.ndarray, int]:
+    out_path = _TMP / f"{filter_id}_{int(sample_rate)}.wav"
+    g191.export_impulse_response(filter_id, str(out_path), float(sample_rate), 0)
+    data, sr = sf.read(str(out_path), dtype="float64")
+    return np.asarray(data), sr
+
+
+def _passband_gain_db(b: np.ndarray, sr: int, freq_hz: float, n_fft: int | None = None) -> float:
+    """DTFT magnitude in dB at ``freq_hz`` (zero-padded to ``n_fft``)."""
+    if n_fft is None:
+        n_fft = max(1 << 18, 1 << math.ceil(math.log2(len(b)) + 4))
+    h = np.fft.rfft(b, n=n_fft)
+    freqs = np.fft.rfftfreq(n_fft, d=1.0 / sr)
+    idx = int(np.argmin(np.abs(freqs - freq_hz)))
+    return float(20.0 * np.log10(np.abs(h[idx]) + 1e-30))
 
 
 # -----------------------------------------------------------------------

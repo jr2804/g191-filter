@@ -113,10 +113,13 @@ jobs:
         if: matrix.os != 'ubuntu-latest' || matrix.target != 'aarch64'
         uses: actions/setup-python@v6
         with:
+          # 3.13t is omitted: PyO3 0.29 rejects free-threaded CPython builds
+          # below 3.14 (`PyO3 does not support the free-threaded build of
+          # CPython versions below 3.14`). To support 3.13t too, we'd need to
+          # pin an older PyO3 that still allows experimental 3.13t builds.
           python-version: |
             3.13
             3.14
-            3.13t
             3.14t
 
       - name: Build wheels

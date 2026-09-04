@@ -76,10 +76,12 @@ jobs:
           fetch-tags: true
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      - name: Sync Cargo version
+      - name: Sync versions to ${{ needs.version.outputs.version }}
         shell: bash
         run: |
-          sed -i -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' Cargo.toml
+          ver="${{ needs.version.outputs.version }}"
+          sed -i -E 's/^version = "[0-9][^"]*"$/version = "'"$ver"'"/' Cargo.toml
+          sed -i -E '0,/^(version = ")[^"]*(")/s//\1'"$ver"'\2/' pyproject.toml
       - name: Build sdist
         run: uv build --sdist
       - uses: actions/upload-artifact@v4
@@ -107,10 +109,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync Cargo version
+      - name: Sync versions to ${{ needs.version.outputs.version }}
         shell: bash
         run: |
-          sed -i -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' Cargo.toml || sed -i '' -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' Cargo.toml
+          ver="${{ needs.version.outputs.version }}"
+          sed -i -E 's/^version = "[0-9][^"]*"$/version = "'"$ver"'"/' Cargo.toml || sed -i '' -E 's/^version = "[0-9][^"]*"$/version = "'"$ver"'"/' Cargo.toml
+          sed -i -E '0,/^(version = ")[^"]*(")/s//\1'"$ver"'\2/' pyproject.toml || sed -i '' -E '0,/^(version = ")[^"]*(")/s//\1'"$ver"'\2/' pyproject.toml
 
       # macOS, Windows, and non-manylinux Linux builds run on the host, so
       # they need explicit interpreter installation. The Linux aarch64 job

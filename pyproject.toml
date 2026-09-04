@@ -1,6 +1,11 @@
 [project]
 name = "g191-filter"
-dynamic = ["version"]
+# CalVer YYYY.M.N. The release workflow patches this literal alongside
+# Cargo.toml's `[package] version` so that wheel METADATA and the sdist
+# PKG-INFO agree. Local development leaves this at `0.0.0`; install from
+# a release tag (`uv add git+...@v2026.9.13`) for accurate metadata. For
+# arbitrary commits, run `python scripts/install_from_git.py` first.
+version = "0.0.0"
 description = "IIR/FIR filters according to Recommendation ITU-T G.191 (Software Tool Library). Provided at arbitrary sampling rates and in many formats"
 readme = "README.md"
 license = { text = "MIT" }
@@ -39,7 +44,7 @@ g191-filter = "g191_filter.cli.app:main"
 
 
 [build-system]
-requires = ["maturin>=1.5.0", "uv-dynamic-versioning"]
+requires = ["maturin>=1.5.0"]
 build-backend = "maturin"
 
 [tool.maturin]
@@ -48,21 +53,6 @@ build-backend = "maturin"
 # the wheel alongside the compiled extension (built from the Cargo crate
 # at the project root).
 python-source = "python"
-
-[tool.hatch.version]
-source = "uv-dynamic-versioning"
-
-[tool.uv-dynamic-versioning]
-fallback-version = "0.0.0"
-# CalVer YYYY.M.N: version comes exclusively from the release tag
-# pushed by .github/workflows/release.yml. uv-dynamic-versioning
-# matches the tag with the regex below; `latest-tag` selects the
-# most recent matching tag rather than commit-count schemes.
-vcs = "git"
-style = "pep440"
-latest-tag = true
-tag-dir = "tags"
-pattern = '^(?P<base>\d{4}\.\d{1,2}\.\d+)$' 
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

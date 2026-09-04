@@ -264,15 +264,7 @@ fn export_impulse_response(
         .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
 
     let mut ir = match &config.coefficients {
-        Coefficients::Fir { h0 } => {
-            // For FIR, resample coefficients if needed
-            if (sample_rate - config.sample_rate).abs() < 1e-9 {
-                h0.clone()
-            } else {
-                let resampler = crate::Resampler::new(config.sample_rate, sample_rate);
-                resampler.resample(h0)
-            }
-        }
+        Coefficients::Fir { h0 } => h0.clone(),
         _ => {
             let dirac = vec![1.0; length];
             let filtered = match &config.coefficients {
@@ -302,9 +294,20 @@ fn export_impulse_response(
         }
     };
 
+    // Single trailing resample path for all coefficient types.
+    // FIR coefficients need a 1/L scale after resampling — the resampler
+    // has unit DC gain (signal-preserving) which gives a resampled
+    // length-LN sequence L× the convolution sum of a filter kernel.
+    let is_fir = matches!(&config.coefficients, Coefficients::Fir { .. });
     if (sample_rate - config.sample_rate).abs() > 1e-9 {
         let resampler = crate::Resampler::new(config.sample_rate, sample_rate);
         ir = resampler.resample(&ir);
+        if is_fir {
+            let ratio = sample_rate / config.sample_rate;
+            for v in ir.iter_mut() {
+                *v /= ratio;
+            }
+        }
     }
 
     write_wav(output_file, &ir, sample_rate, hound::SampleFormat::Float, 32)?;

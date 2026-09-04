@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           mise dev
-          uvx maturin develop -m src/g191_filter/Cargo.toml --release
+          uvx maturin develop --release
 
       - name: Generate filter figures
         run: uv run scripts/gen_filter_figures.py

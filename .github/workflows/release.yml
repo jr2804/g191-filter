@@ -68,10 +68,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # uv-dynamic-versioning reads git tags to derive the sdist version.
-          # Without these it falls back to `0.0.0.post1.dev0+<sha>` even when
-          # the version job has just created the matching tag upstream, so
-          # the sdist filename doesn't match the release tag.
           fetch-depth: 0
           fetch-tags: true
       - name: Setup uv
@@ -164,11 +160,13 @@ jobs:
         with:
           path: artifacts
 
-      - name: Flatten artifacts
+      - name: Flatten wheel artifacts
         shell: bash
         run: |
           mkdir -p dist
-          find artifacts -type f \( -name "*.whl" -o -name "*.tar.gz" \) -exec cp {} dist/ \;
+          find artifacts -type f -name "*.whl" -exec cp {} dist/ \;
+          # Defensive: never attach anything but wheels to a release.
+          find dist -type f -not -name "*.whl" -delete
           ls -la dist/
 
       - name: Create GitHub Release

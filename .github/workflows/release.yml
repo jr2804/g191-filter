@@ -76,8 +76,14 @@ jobs:
         shell: bash
         run: |
           ver="${{ needs.version.outputs.version }}"
-          sed -i -E 's/^version = "[0-9][^"]*"$/version = "'"$ver"'"/' Cargo.toml
-          sed -i -E '0,/^(version = ")[^"]*(")/s//\1'"$ver"'\2/' pyproject.toml
+          # POSIX-only sed: replace the literal 0.0.0 placeholder. No GNU
+          # extensions (0,/re/ ranges, empty s// patterns) — BSD sed on
+          # macOS silently no-ops on those, leaving 0.0.0 wheels.
+          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$ver"'"/' Cargo.toml
+          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$ver"'"/' pyproject.toml
+          rm -f Cargo.toml.bak pyproject.toml.bak
+          grep -q "^version = \"$ver\"$" Cargo.toml
+          grep -q "^version = \"$ver\"$" pyproject.toml
       - name: Build sdist
         run: uv build --sdist
       - uses: actions/upload-artifact@v4
@@ -109,8 +115,13 @@ jobs:
         shell: bash
         run: |
           ver="${{ needs.version.outputs.version }}"
-          sed -i -E 's/^version = "[0-9][^"]*"$/version = "'"$ver"'"/' Cargo.toml || sed -i '' -E 's/^version = "[0-9][^"]*"$/version = "'"$ver"'"/' Cargo.toml
-          sed -i -E '0,/^(version = ")[^"]*(")/s//\1'"$ver"'\2/' pyproject.toml || sed -i '' -E '0,/^(version = ")[^"]*(")/s//\1'"$ver"'\2/' pyproject.toml
+          # POSIX-only sed: replace the literal 0.0.0 placeholder (works on
+          # GNU and BSD sed alike — see the sdist job comment).
+          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$ver"'"/' Cargo.toml
+          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$ver"'"/' pyproject.toml
+          rm -f Cargo.toml.bak pyproject.toml.bak
+          grep -q "^version = \"$ver\"$" Cargo.toml
+          grep -q "^version = \"$ver\"$" pyproject.toml
 
       # macOS, Windows, and non-manylinux Linux builds run on the host, so
       # they need explicit interpreter installation. The Linux aarch64 job

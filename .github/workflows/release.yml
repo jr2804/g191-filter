@@ -105,11 +105,30 @@ jobs:
         run: |
           sed -i -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' src/g191_filter/Cargo.toml || sed -i '' -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' src/g191_filter/Cargo.toml
 
+      # macOS, Windows, and non-manylinux Linux builds run on the host, so
+      # they need explicit interpreter installation. The Linux aarch64 job
+      # uses the manylinux container and skips this step (interpreter is
+      # bundled under /opt/python on PATH inside the container).
+      - name: Setup Python
+        if: matrix.os != 'ubuntu-latest' || matrix.target != 'aarch64'
+        uses: actions/setup-python@v6
+        with:
+          python-version: |
+            3.13
+            3.14
+            3.13t
+            3.14t
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --find-interpreter -i 3.13 3.14 3.13t 3.14t
+          # `--find-interpreter` discovers all CPython interpreters
+          # (regular + free-threaded) on PATH. Bundled in manylinux
+          # containers; installed by `actions/setup-python` on host jobs.
+          # Do NOT combine `--find-interpreter` with `-i <path>` — they
+          # are mutually exclusive in `maturin build`.
+          args: --release --find-interpreter
           working-directory: .
 
       - name: Upload wheels

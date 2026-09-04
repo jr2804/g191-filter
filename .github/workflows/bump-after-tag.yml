@@ -9,7 +9,11 @@ name: bump-after-tag
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      # GitHub's tag filter uses fnmatch — `+` is a literal, not a quantifier.
+      # We accept any tag starting with two digits, a dot, and at least one
+      # digit: covers every CalVer YYYY.M.N for years 1900-2099. The
+      # workflow body validates the full format before stamping.
+      - '[0-9][0-9].[0-9]*'
 concurrency:
   group: bump-${{ github.ref }}
   cancel-in-progress: false

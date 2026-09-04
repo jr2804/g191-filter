@@ -1,10 +1,14 @@
-"""g191_filter package."""
+"""g191_filter package — Rust-backed ITU-T G.191 FIR/IIR filter library.
+
+The compiled Rust extension ships as `g191_filter.g191_filter.{so,pyd,dylib}`
+under this package; the symbols are re-exported here as top-level.
+"""
 
 from __future__ import annotations
 
 import importlib.metadata
 
-from _native import (  # noqa: F401
+from .g191_filter import (  # noqa: F401
     BlockwiseFilter,
     export_impulse_response,
     filter_array,

@@ -37,15 +37,17 @@ dev = [
 [project.scripts]
 g191-filter = "g191_filter.cli.app:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/g191_filter"]
 
 [build-system]
-requires = ["hatchling", "uv-dynamic-versioning", "maturin>=0.20"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.5.0", "uv-dynamic-versioning"]
+build-backend = "maturin"
 
 [tool.maturin]
-manifest-path = "src/g191_filter/Cargo.toml"
+# Python wrapper sources live at python/g191_filter/. maturin expects
+# `python-source/<package_name>/__init__.py` and bundles those files into
+# the wheel alongside the compiled extension (built from the Cargo crate
+# at the project root).
+python-source = "python"
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
@@ -64,7 +66,7 @@ pattern = '^(?P<base>\d{4}\.\d{1,2}\.\d+)$'
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src", "tests"]
+pythonpath = ["python", "tests"]
 cache_dir = "tests/test-cache"
 addopts = "-v --tb=short"
 

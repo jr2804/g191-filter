@@ -524,7 +524,7 @@ fn write_wav(
 }
 
 #[pymodule]
-fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn g191_filter(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(filter_wave, m)?)?;
     m.add_function(wrap_pyfunction!(filter_array, m)?)?;
     m.add_function(wrap_pyfunction!(export_impulse_response, m)?)?;

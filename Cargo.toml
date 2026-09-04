@@ -11,7 +11,11 @@ authors = ["Jan.Reimes <jan.reimes@head-acoustics.com>"]
 description = "Rust core for ITU-T G.191 FIR/IIR filters"
 
 [lib]
-name = "_native"
+# The lib name IS the Python module name. maturin builds wheels with the
+# compiled extension as `g191_filter/g191_filter.{so,pyd}` and our user
+# wrapper at `python/g191_filter/__init__.py` does
+# `from .g191_filter import *` to re-export Rust functions.
+name = "g191_filter"
 crate-type = ["cdylib"]
 
 [dependencies]

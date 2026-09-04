@@ -56,7 +56,7 @@ mcporter.json
 mise.local.toml
 
 # compile artifacts
-src/g191_filter/target/
+target/
 nul
 *.pdb
 *.log

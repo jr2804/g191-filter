@@ -79,7 +79,7 @@ jobs:
       - name: Sync Cargo version
         shell: bash
         run: |
-          sed -i -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' src/g191_filter/Cargo.toml
+          sed -i -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' Cargo.toml
       - name: Build sdist
         run: uv build --sdist
       - uses: actions/upload-artifact@v4
@@ -110,7 +110,7 @@ jobs:
       - name: Sync Cargo version
         shell: bash
         run: |
-          sed -i -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' src/g191_filter/Cargo.toml || sed -i '' -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' src/g191_filter/Cargo.toml
+          sed -i -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' Cargo.toml || sed -i '' -E 's/^version = "[0-9][^"]*"$/version = "${{ needs.version.outputs.version }}"/' Cargo.toml
 
       # macOS, Windows, and non-manylinux Linux builds run on the host, so
       # they need explicit interpreter installation. The Linux aarch64 job
@@ -145,9 +145,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}-${{ matrix.target }}
-          # maturin-action writes wheels under the Cargo crate's directory
-          # (src/g191_filter/target/wheels/), not the workflow's cwd.
-          path: src/g191_filter/target/wheels/*.whl
+          # maturin-action writes wheels under the Cargo crate's target/
+          # (project root after the restructure: src/ = Rust sources,
+          # python/g191_filter/ = Python wrapper).
+          path: target/wheels/*.whl
 
   publish-release:
     needs: [version, sdist, wheels]

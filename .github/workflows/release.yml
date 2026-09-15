@@ -122,63 +122,93 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
+  # Host builds. One interpreter per job: `actions/setup-python` keeps only
+  # one flavour of a given version on PATH (asking for `3.14` and `3.14t`
+  # repoints pythonLocation/LD_LIBRARY_PATH at the free-threaded build and, on
+  # Windows, removes the standard entry), so `--find-interpreter` could only
+  # ever produce one 3.14 flavour per job and the standard 3.14 wheels were
+  # missing everywhere except the manylinux container. Each job therefore
+  # installs exactly one interpreter and builds with `-i <path>`.
+  wheels:
+    needs: version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            target: x86_64
-          - os: ubuntu-latest
-            target: aarch64
-          - os: windows-latest
-            target: x64
-          - os: macos-latest
-            target: aarch64
-          - os: macos-latest
-            target: x86_64
+          - { os: ubuntu-latest, target: x86_64, python: "3.13" }
+          - { os: ubuntu-latest, target: x86_64, python: "3.14" }
+          - { os: ubuntu-latest, target: x86_64, python: "3.14t" }
+          - { os: windows-latest, target: x64, python: "3.13" }
+          - { os: windows-latest, target: x64, python: "3.14" }
+          - { os: windows-latest, target: x64, python: "3.14t" }
+          - { os: macos-latest, target: aarch64, python: "3.13" }
+          - { os: macos-latest, target: aarch64, python: "3.14" }
+          - { os: macos-latest, target: aarch64, python: "3.14t" }
+          - { os: macos-latest, target: x86_64, python: "3.13" }
+          - { os: macos-latest, target: x86_64, python: "3.14" }
+          - { os: macos-latest, target: x86_64, python: "3.14t" }
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.version.outputs.version }}
 
-      # macOS, Windows, and non-manylinux Linux builds run on the host, so
-      # they need explicit interpreter installation. The Linux aarch64 job
-      # uses the manylinux container and skips this step (interpreter is
-      # bundled under /opt/python on PATH inside the container).
-      - name: Setup Python
-        if: matrix.os != 'ubuntu-latest' || matrix.target != 'aarch64'
+      # 3.13t is deliberately absent: PyO3 0.29 rejects free-threaded CPython
+      # builds below 3.14 (`PyO3 does not support the free-threaded build of
+      # CPython versions below 3.14`), and it is the newest PyO3 release.
+      # Revisit if a later PyO3 lowers that floor.
+      - name: Setup Python ${{ matrix.python }}
+        id: pys
         uses: actions/setup-python@v6
         with:
-          # 3.13t is omitted: PyO3 0.29 rejects free-threaded CPython builds
-          # below 3.14 (`PyO3 does not support the free-threaded build of
-          # CPython versions below 3.14`). To support 3.13t too, we'd need to
-          # pin an older PyO3 that still allows experimental 3.13t builds.
-          python-version: |
-            3.13
-            3.14
-            3.14t
+          python-version: ${{ matrix.python }}
+
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          # `-i` takes the interpreter's executable, so the wheel is built for
+          # exactly the one interpreter this job installed. `--find-interpreter`
+          # would be ambiguous here — it is kept for the container job below,
+          # where all interpreters are present and discoverable. The two are
+          # mutually exclusive in a single `maturin build` invocation.
+          args: --release -i ${{ steps.pys.outputs.python-path }}
+          working-directory: .
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-${{ matrix.target }}-${{ matrix.python }}
+          # maturin-action writes wheels under the Cargo crate's target/
+          # (project root after the restructure: src/ = Rust sources,
+          # python/g191_filter/ = Python wrapper).
+          path: target/wheels/*.whl
+
+  # The manylinux aarch64 image ships every CPython under /opt/python, so one
+  # job yields all three interpreters and no setup-python step is needed.
+  wheels-linux-aarch64:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.version }}
 
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
-          # `--find-interpreter` discovers all CPython interpreters
-          # (regular + free-threaded) on PATH. Bundled in manylinux
-          # containers; installed by `actions/setup-python` on host jobs.
-          # Do NOT combine `--find-interpreter` with `-i <path>` — they
-          # are mutually exclusive in `maturin build`.
+          target: aarch64
           args: --release --find-interpreter
           working-directory: .
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}-${{ matrix.target }}
-          # maturin-action writes wheels under the Cargo crate's target/
-          # (project root after the restructure: src/ = Rust sources,
-          # python/g191_filter/ = Python wrapper).
+          name: wheels-linux-aarch64
           path: target/wheels/*.whl
 
   publish-release:
-    needs: [version, sdist, wheels]
+    needs: [version, sdist, wheels, wheels-linux-aarch64]
     runs-on: ubuntu-latest
     permissions:
       contents: write

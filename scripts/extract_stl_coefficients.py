@@ -27,6 +27,11 @@ def main() -> None:
     out.append("// reference coefficient tables (values normalized to unit range).")
     out.append("// DO NOT EDIT BY HAND - regenerate with: python scripts/extract_stl_coefficients.py")
     out.append("")
+    # Coefficient literals carry full f64 precision on purpose (bit-exact
+    # fidelity to the STL reference tables); clippy's precision lint is noise
+    # here, and it is emitted as an inner attribute so regeneration keeps it.
+    out.append("#![allow(clippy::excessive_precision)]")
+    out.append("")
 
     # ---------------- FIR ----------------
     out.append("pub mod fir {")
@@ -43,7 +48,8 @@ def main() -> None:
     fir_specs = [
         ("HQ_DOWN_2_TO_1", "h02", "f24", "High-quality 2:1 downsampling FIR, 16 kHz"),
         ("HQ_DOWN_3_TO_1", "h03", "f24", "High-quality 3:1 downsampling FIR, 16 kHz"),
-        ("FLAT_BAND_PASS", "flat_coef", "f16", "Flat band-pass FIR, 8 kHz"),
+        # STL fir-flat.c: designed for 16 kHz (3 dB points 98 Hz / 3462 Hz).
+        ("FLAT_BAND_PASS", "flat_coef", "f16", "Flat band-pass FIR, 16 kHz"),
         ("IRS8", "h0IRS8", "f24", "IRS receive weighting, 8 kHz"),
         ("IRS16", "h0IRS16", "f24", "IRS receive weighting, 16 kHz"),
         ("MOD_IRS16", "mod_irs16_coef", "f16", "Modified IRS send weighting, 16 kHz"),
@@ -138,7 +144,9 @@ def main() -> None:
         out.append("")
     out.append("}")
 
-    dest = BASE / "src" / "g191_filter" / "src" / "coeffs_generated.rs"
+    # Crate root is the project root after the maturin mixed-project move
+    # (Rust sources in src/, Python wrapper in python/).
+    dest = BASE / "src" / "coeffs_generated.rs"
     dest.write_text("\n".join(out) + "\n", encoding="utf-8")
     print(f"Wrote {dest} ({len(out)} lines)")
 

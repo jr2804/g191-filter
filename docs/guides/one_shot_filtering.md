@@ -102,11 +102,9 @@ filter_wave(
 The command-line interface allows filtering files via `uvx` or `uv run`:
 
 ```bash
-# Basic file filtering
+# Basic file filtering (filter_id and input_file are positional)
 uvx --from git+https://github.com/jr2804/g191-filter.git g191-filter filter \
-  --filter-id irs8khz \
-  --input-file samples/speech.wav \
-  --output-file samples/speech_irs.wav
+  irs8khz samples/speech.wav --output-file samples/speech_irs.wav
 ```
 
 ---
@@ -119,16 +117,51 @@ The frequency responses for one-shot filtering can be inspected using `get_frequ
 import xy
 from g191_filter import get_frequency_response
 
-freqs, mag_db = get_frequency_response("flat_band_pass", n_points=1024, sample_rate=8000)
+freqs, mag_db = get_frequency_response("flat1", n_points=1024, sample_rate=16000)
 
 chart = xy.line_chart(
-    xy.line(freqs[freqs >= 50], mag_db[freqs >= 50], name="Flat Band-Pass", color="#0d9488"),
-    xy.x_axis(label="Frequency (Hz)", type_="log", domain=(50, 4000)),
+    xy.line(freqs[freqs >= 50], mag_db[freqs >= 50], name="Flat 16 kHz", color="#0d9488"),
+    xy.x_axis(label="Frequency (Hz)", type_="log", domain=(50, 8000)),
     xy.y_axis(label="Magnitude (dB)", domain=(-60, 5)),
-    title="Flat Band-Pass (0.3 - 3.4 kHz)",
+    title="Flat Band-Pass (16 kHz, 0.1 - 3.4 kHz)",
 )
 ```
 
 <p align="center">
-  <img src="../assets/figures/flat_band_pass.svg" alt="Flat Band-Pass Frequency Response" width="700">
+  <img src="../assets/figures/flat1.svg" alt="Flat 1:1 Frequency Response" width="700">
 </p>
+
+---
+
+### Frequency Response Analysis & CLI Scan
+
+Two complimentary frequency response tools are provided:
+
+1. **Analytical DTFT (`get_frequency_response`)**: Evaluates the transfer function
+   directly via the discrete-time Fourier transform over $N$ linear points from
+   $0$ to $f_s / 2$. Fastest for plotting and continuous inspection.
+2. **Sine-Power Scan (`frequency_response_scan` / `g191-filter freqresp`)**: Port of
+   the STL `fltresp` reference tool. For each candidate frequency, synthesizes a
+   continuous sinewave, processes it through the filter engine (handling internal
+   up-/down-sampling naturally), skips transient edge frames, and measures output
+   power relative to input power:
+
+```python
+from g191_filter import frequency_response_scan
+
+# Scan flat1 from 50 Hz to 4000 Hz in 250 Hz steps at 16 kHz:
+freqs_hz, gains_db = frequency_response_scan(
+    "flat1",
+    f0=50.0 / 16000.0,    # normalized starting frequency (0..0.5)
+    ff=4000.0 / 16000.0,  # normalized end frequency
+    fstep=250.0 / 16000.0,
+    sample_rate=16000.0,
+)
+```
+
+Or from the command line:
+
+```bash
+# Direct frequency response scan output as a TSV table:
+g191-filter freqresp flat1 --fs 16000 --f0 50 --ff 4000 --fstep 250
+```

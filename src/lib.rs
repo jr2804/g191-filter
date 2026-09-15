@@ -399,11 +399,6 @@ pub fn get_filter_config(filter_id: FilterId) -> Option<FilterConfig> {
             Coefficients::Fir { h0: fir_coeffs::HQ_DOWN_3_TO_1.to_vec() },
             1, 3, 1.0,
         ),
-        FilterId::FlatBandPass => (
-            FilterType::Fir, 8000.0, fir_coeffs::FLAT_BAND_PASS.len(),
-            Coefficients::Fir { h0: fir_coeffs::FLAT_BAND_PASS.to_vec() },
-            1, 1, 1.0,
-        ),
         FilterId::IRS8 => (
             FilterType::Fir, 8000.0, fir_coeffs::IRS8.len(),
             Coefficients::Fir { h0: fir_coeffs::IRS8.to_vec() },
@@ -470,16 +465,26 @@ pub fn get_filter_config(filter_id: FilterId) -> Option<FilterConfig> {
             Coefficients::Fir { h0: fir_coeffs::HQ_DOWN_3_TO_1.to_vec() },
             3, 1, 3.0,
         ),
-        // --- Flat band-pass family (reuse flat_band_pass coefficients) ---
-        FilterId::FlatBandPass1 => (
-            FilterType::Fir, 8000.0, fir_coeffs::FLAT_BAND_PASS.len(),
+        // --- Flat band-pass family ---
+        // All three share the 168-tap `fill_flat_band_pass` set, which STL
+        // documents as designed for 16 kHz (`fir-flat.c`): 3 dB points at
+        // 98 Hz and 3462 Hz. STL dispatches them by input rate and direction
+        // (`fir/filter.c`): `flat1` keeps 16 kHz, `flat` at 8 kHz upsamples
+        // 1:2, `flat` at 16 kHz downsamples 2:1.
+        FilterId::Flat1 => (
+            FilterType::Fir, 16000.0, fir_coeffs::FLAT_BAND_PASS.len(),
             Coefficients::Fir { h0: fir_coeffs::FLAT_BAND_PASS.to_vec() },
             1, 1, 1.0,
         ),
-        FilterId::FlatBandPass1To2 => (
+        FilterId::Flat1To2 => (
             FilterType::Fir, 8000.0, fir_coeffs::FLAT_BAND_PASS.len(),
             Coefficients::Fir { h0: fir_coeffs::FLAT_BAND_PASS.to_vec() },
             2, 1, 2.0,
+        ),
+        FilterId::Flat2To1 => (
+            FilterType::Fir, 16000.0, fir_coeffs::FLAT_BAND_PASS.len(),
+            Coefficients::Fir { h0: fir_coeffs::FLAT_BAND_PASS.to_vec() },
+            1, 2, 1.0,
         ),
         // --- Psophometric / measurement filters ---
         FilterId::Msin16k => (
@@ -673,7 +678,7 @@ pub fn list_filter_ids() -> Vec<FilterId> {
     use FilterId::*;
     vec![
         HQDown2To1, HQDown3To1, HQUp1To2, HQUp1To3,
-        FlatBandPass, FlatBandPass1, FlatBandPass1To2,
+        Flat1, Flat1To2, Flat2To1,
         IRS8, IRS16, ModIRS16, ModIRS48,
         Msin16k, Pso8k, Dsm16k, Hirs16, TiaIrs8, RxIrs8, RxIrs16,
         P341_16k, Bp5k16k, Bp100_5k16k, Bp14k32k, Bp20k48k,

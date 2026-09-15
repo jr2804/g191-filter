@@ -341,6 +341,8 @@ fn list_filters() -> Vec<String> {
         .collect()
 }
 
+type FreqResponse<'py> = (Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>);
+
 /// STL fltresp: sine-power frequency response scan.
 /// For each normalized frequency f_norm in [f0, ff], generates a long sinewave,
 /// filters it, and computes 10*log10(P_out/P_in) skipping the first/last 2N samples.
@@ -354,7 +356,7 @@ fn frequency_response_scan<'py>(
     fstep: f64,
     sample_rate: f64,
     n_frames: Option<usize>,
-) -> PyResult<(Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>)> {
+) -> PyResult<FreqResponse<'py>> {
     let fid = FilterId::from_str(filter_id)
         .map_err(PyValueError::new_err)?;
     let config = get_filter_config(fid)
@@ -409,9 +411,6 @@ fn get_filter_info_py<'a>(py: Python<'a>, filter_id: &str) -> PyResult<Py<PyDict
     dict.set_item("length", info.length)?;
     Ok(dict.into())
 }
-
-/// Frequency response arrays (frequencies, magnitudes) bound to Python.
-type FreqResponse<'py> = (Bound<'py, PyArray1<f64>>, Bound<'py, PyArray1<f64>>);
 
 /// Compute frequency response of a filter
 #[pyfunction]
@@ -532,7 +531,7 @@ fn g191_filter(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_coefficients_sos_py, m)?)?;
     m.add_function(wrap_pyfunction!(list_filters, m)?)?;
     m.add_function(wrap_pyfunction!(frequency_response_scan, m)?)?;
-    m.add_function(wrap_pyfunction!(get_filter_info_py, m)?)?;;
+    m.add_function(wrap_pyfunction!(get_filter_info_py, m)?)?;
     m.add_function(wrap_pyfunction!(get_frequency_response, m)?)?;
     m.add_class::<BlockwiseFilterPy>()?;
     // Re-export the class under a more idiomatic name

@@ -58,7 +58,7 @@ Run the Typer CLI in development mode:
 uv run g191-filter --help
 
 # Stream filter a WAV file
-uv run g191-filter filter --filter-id irs8khz --input-file input.wav --output-file output.wav
+uv run g191-filter filter irs8khz input.wav --output-file output.wav
 ```
 
 ### Documentation Workflow

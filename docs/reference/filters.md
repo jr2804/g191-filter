@@ -28,12 +28,13 @@ mindmap
     Resampling and Rate Conversion
       hq_down_2_to_1
       hq_down_3_to_1
+      flat_2_to_1
       iir_down_3_to_1
       iir_up_1_to_3
       iir_casc_lp_3_to_1
       iir_casc_lp_1_to_3
     Telecom and Conditioning
-      flat_band_pass
+      flat1
       g712_8khz
       dir_dc_removal
       stdpcm_16khz
@@ -65,7 +66,7 @@ mindmap
 ### 1. Intermediate Reference System (IRS) Family
 
 The Intermediate Reference System (IRS) models acoustic-to-electrical and electrical-to-acoustic
-response curves of telephone handsets. They are indispensable for speech quality testing (e.g. ITU-T P.800, P.862 PESQ, P.863 POLQA).
+response curves of telephone handsets. They are indispensable for speech quality testing (e.g. ITU-T P.800 and related standardized evaluation frameworks).
 
 #### Overview & Family Response
 
@@ -116,7 +117,7 @@ A family of linear-phase FIR low-pass filters for bandwidth limiting at a standa
     ≈ 0.65 × f<sub>c</sub>) and its stopband rejection is far from uniform.
     It is **not** a hard/brickwall low-pass and is not suitable as an
     anti-alias / anti-imaging filter for sample-rate conversion — use the
-    [Resampling & Rate-Conversion filters](#3-resampling-rate-conversion-filters)
+    [Resampling & Rate-Conversion filters](#3-resampling--rate-conversion-filters)
     (−150 … −178 dB, steep transition) for that purpose.
 
 !!! note "Passband gain is not 0 dB"
@@ -234,6 +235,7 @@ Filters optimized for integer rate conversion (decimation and interpolation) bet
 | --------- | ---- | ----------- | ------------- | ----------- |
 | `hq_down_2_to_1` | FIR | 2:1 Down | 118 taps | High-quality 2:1 decimation filter (e.g. 16 kHz $\rightarrow$ 8 kHz) |
 | `hq_down_3_to_1` | FIR | 3:1 Down | 168 taps | High-quality 3:1 decimation filter (e.g. 48 kHz $\rightarrow$ 16 kHz) |
+| `flat_2_to_1` | FIR | 2:1 Down | 168 taps | Flat bandpass 2:1 decimation filter (16 kHz $\rightarrow$ 8 kHz, linear-phase) |
 | `iir_down_3_to_1` | IIR Direct | 3:1 Down | Order 23 | Direct-form 3:1 decimation IIR |
 | `iir_up_1_to_3` | IIR Direct | 1:3 Up | Order 23 | Direct-form 1:3 interpolation IIR |
 | `iir_casc_lp_3_to_1` | IIR Cascade | 3:1 Down | 7 Biquads | 7-stage biquad cascade low-pass for 3:1 decimation |
@@ -249,6 +251,11 @@ Filters optimized for integer rate conversion (decimation and interpolation) bet
 === "hq_down_3_to_1"
     <p align="center">
       <img src="../assets/figures/hq_down_3_to_1.svg" alt="hq_down_3_to_1" width="700">
+    </p>
+
+=== "flat_2_to_1"
+    <p align="center">
+      <img src="../assets/figures/flat_2_to_1.svg" alt="flat_2_to_1" width="700">
     </p>
 
 === "iir_down_3_to_1"
@@ -287,15 +294,15 @@ Filters for voiceband conditioning, standard PCM channel emulation, and DC offse
 
 | Filter ID | Type | Taps / Order | Native Rate | Description |
 | --------- | ---- | ------------ | ----------- | ----------- |
-| `flat_band_pass` | FIR | 168 taps | 8 kHz | Brickwall 300–3400 Hz bandpass with flat in-band response |
+| `flat1` | FIR | 168 taps | 16 kHz | Flat linear-phase bandpass filter (3 dB points at 98 Hz and 3462 Hz; ripple < 0.2 dB over 143–3407 Hz) |
 | `g712_8khz` | IIR Parallel | 4 Biquads (Order 8) | 8 kHz | ITU-T G.712 PCM channel filter (attenuation and group delay template) |
 | `dir_dc_removal` | IIR Direct | 1st Order ($b=[1, -1], a=[1, -0.985]$) | 8 kHz | High-pass DC offset notch filter |
 
 #### Individual Responses
 
-=== "flat_band_pass"
+=== "flat1"
     <p align="center">
-      <img src="../assets/figures/flat_band_pass.svg" alt="flat_band_pass" width="700">
+      <img src="../assets/figures/flat1.svg" alt="flat1" width="700">
     </p>
 
 === "g712_8khz"
@@ -312,7 +319,9 @@ Filters for voiceband conditioning, standard PCM channel emulation, and DC offse
 
 ### 5. Standard PCM IIR Filters
 
-The `stdpcm_*` family provides the ITU-T standard PCM channel reference filter in parallel-form biquad at multiple sample rates and rate-change factors. They share the same coefficients as `g712_8khz` (G.712 PCM weighting, 16 kHz design) but expose 1:1, 2:1, and 1:2 rate variants.
+The `stdpcm_*` family provides the ITU-T standard PCM channel reference filter in parallel-form
+biquad at multiple sample rates and rate-change factors. They share the same coefficients as
+`g712_8khz` (G.712 PCM weighting, 16 kHz design) but expose 1:1, 2:1, and 1:2 rate variants.
 
 #### Family Response
 
@@ -473,8 +482,7 @@ High-quality interpolation filters for 1:2 and 1:3 upsampling, reusing the HQ do
 | --------- | ---- | ---- | ----------- | ----- | ----------- |
 | `hq_up_1_to_2` | FIR | 118 | 8 kHz | 2:1 (up) | High-quality 1:2 upsampler (reuses `hq_down_2_to_1` coeffs, gain 2.0) |
 | `hq_up_1_to_3` | FIR | 168 | 8 kHz | 3:1 (up) | High-quality 1:3 upsampler (reuses `hq_down_3_to_1` coeffs, gain 3.0) |
-| `flat_1_to_2` | FIR | 168 | 8 kHz | 2:1 (up) | Flat band-pass 1:2 upsampler |
-| `flat1` | FIR | 168 | 8 kHz | 1:1 | Flat band-pass 1:1 (pass-through filter) |
+| `flat_1_to_2` | FIR | 168 | 8 kHz | 2:1 (up) | Flat band-pass 1:2 upsampler (8 kHz $\rightarrow$ 16 kHz) |
 
 #### Individual Responses
 
@@ -491,9 +499,4 @@ High-quality interpolation filters for 1:2 and 1:3 upsampling, reusing the HQ do
 === "flat_1_to_2"
     <p align="center">
       <img src="../assets/figures/flat_1_to_2.svg" alt="flat_1_to_2" width="700">
-    </p>
-
-=== "flat1"
-    <p align="center">
-      <img src="../assets/figures/flat1.svg" alt="flat1" width="700">
     </p>

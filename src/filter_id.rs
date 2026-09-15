@@ -9,9 +9,9 @@ pub enum FilterId {
     HQDown3To1,
     HQUp1To2,
     HQUp1To3,
-    FlatBandPass,
-    FlatBandPass1,
-    FlatBandPass1To2,
+    Flat1,
+    Flat1To2,
+    Flat2To1,
     IRS8,
     IRS16,
     ModIRS16,
@@ -63,9 +63,9 @@ impl FilterId {
             "hq_down_3_to_1" => Self::HQDown3To1,
             "hq_up_1_to_2" => Self::HQUp1To2,
             "hq_up_1_to_3" => Self::HQUp1To3,
-            "flat_band_pass" => Self::FlatBandPass,
-            "flat1" => Self::FlatBandPass1,
-            "flat_1_to_2" => Self::FlatBandPass1To2,
+            "flat1" => Self::Flat1,
+            "flat_1_to_2" => Self::Flat1To2,
+            "flat_2_to_1" => Self::Flat2To1,
             "irs8khz" => Self::IRS8,
             "irs16khz" => Self::IRS16,
             "mod_irs16khz" => Self::ModIRS16,
@@ -109,9 +109,9 @@ impl FilterId {
             Self::HQDown3To1 => "hq_down_3_to_1",
             Self::HQUp1To2 => "hq_up_1_to_2",
             Self::HQUp1To3 => "hq_up_1_to_3",
-            Self::FlatBandPass => "flat_band_pass",
-            Self::FlatBandPass1 => "flat1",
-            Self::FlatBandPass1To2 => "flat_1_to_2",
+            Self::Flat1 => "flat1",
+            Self::Flat1To2 => "flat_1_to_2",
+            Self::Flat2To1 => "flat_2_to_1",
             Self::IRS8 => "irs8khz",
             Self::IRS16 => "irs16khz",
             Self::ModIRS16 => "mod_irs16khz",
@@ -152,7 +152,7 @@ impl FilterId {
     pub fn filter_type(&self) -> FilterType {
         match self {
             Self::HQDown2To1 | Self::HQDown3To1 | Self::HQUp1To2 | Self::HQUp1To3
-            | Self::FlatBandPass | Self::FlatBandPass1 | Self::FlatBandPass1To2
+            | Self::Flat1 | Self::Flat1To2 | Self::Flat2To1
             | Self::IRS8 | Self::IRS16 | Self::ModIRS16 | Self::ModIRS48
             | Self::Msin16k | Self::Pso8k | Self::Dsm16k
             | Self::Hirs16 | Self::TiaIrs8 | Self::RxIrs8 | Self::RxIrs16

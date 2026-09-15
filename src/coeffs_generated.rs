@@ -4,6 +4,8 @@
 // reference coefficient tables (values normalized to unit range).
 // DO NOT EDIT BY HAND - regenerate with: python scripts/extract_stl_coefficients.py
 
+#![allow(clippy::excessive_precision)]
+
 pub mod fir {
     /// High-quality 2:1 downsampling FIR, 16 kHz
     pub const HQ_DOWN_2_TO_1: &[f64] = &[
@@ -61,7 +63,7 @@ pub mod fir {
         3.69429588317871094e-04, 8.71062278747558594e-04, 1.00696086883544922e-03, 7.72356986999511719e-04, 4.46438789367675781e-04, 1.04546546936035156e-04,
     ];
 
-    /// Flat band-pass FIR, 8 kHz
+    /// Flat band-pass FIR, 16 kHz
     pub const FLAT_BAND_PASS: &[f64] = &[
         -1.31225585937500000e-03, -5.12695312500000000e-03, -4.76074218750000000e-03, -2.74658203125000000e-03, -3.05175781250000000e-05, -2.13623046875000000e-04,
         -2.38037109375000000e-03, -3.26538085937500000e-03, -1.67846679687500000e-03, -3.96728515625000000e-04, -1.67846679687500000e-03, -3.66210937500000000e-03,

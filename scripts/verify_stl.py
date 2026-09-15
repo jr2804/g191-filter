@@ -25,7 +25,7 @@ FILTER_MAP = [
     ("IRS48", "mod_irs48khz"),
     ("HQ2", "hq_down_2_to_1"),
     ("HQ3", "hq_down_3_to_1"),
-    ("FLAT", "flat_band_pass"),
+    ("FLAT", "flat_2_to_1"),
 ]
 
 

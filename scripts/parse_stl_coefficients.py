@@ -60,10 +60,10 @@ def get_fir_filters():
             "gain": 1.0,
         }
     if "flat_coef" in flat:
-        filters["flat_band_pass"] = {
+        filters["flat1"] = {
             "values": flat["flat_coef"]["values"],
             "len": flat["flat_coef"]["len"],
-            "sr": 48000,
+            "sr": 16000,
             "ratio": (1, 1),
             "gain": 1.0,
         }

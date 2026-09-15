@@ -71,15 +71,15 @@ INDIVIDUAL_FILTERS = [
         "y_domain": (-100, 10),
         "xlim": (50, 24000),
     },
-    # Band-Pass FIR
+    # Flat Band-Pass Family FIR
     {
-        "id": "flat_band_pass",
-        "sr": 8000,
-        "title": "Flat Band-Pass FIR (0.3 - 3.4 kHz, 8 kHz)",
+        "id": "flat_2_to_1",
+        "sr": 16000,
+        "title": "Flat Band-Pass Downsampler 2:1 (16 kHz)",
         "color": "#0d9488",
         "f_min": 50,
         "y_domain": (-80, 10),
-        "xlim": (10, 4000),
+        "xlim": (50, 8000),
     },
     # IRS Family FIR
     {
@@ -365,11 +365,12 @@ INDIVIDUAL_FILTERS = [
     },
     {
         "id": "flat1",
-        "sr": 8000,
-        "title": "Flat Band-Pass 1:1 Filter (8 kHz)",
+        "sr": 16000,
+        "title": "Flat Band-Pass 1:1 Filter (16 kHz)",
         "color": "#14b5a0",
         "f_min": 50,
         "y_domain": (-80, 10),
+        "xlim": (50, 8000),
     },
     # PCM IIR Family
     {
@@ -514,10 +515,10 @@ def generate_group_charts() -> None:
     _apply_freq_ticks(ax, 48000)
     _finalize(fig, OUT_DIR / "resampling_family.svg")
 
-    # 4. Telecom & Processing Filters (G.712, DC Removal, Flat Band-Pass)
+    # 4. Telecom & Processing Filters (G.712, DC Removal, Flat1)
     fig, ax = plt.subplots(figsize=(7.4, 4.2))
     for fid, sr, lbl, col, ls in [
-        ("flat_band_pass", 8000, "Flat Band-Pass (0.3-3.4 kHz)", "#009E73", "-"),
+        ("flat1", 16000, "Flat1 (0.1-3.4 kHz, 16k)", "#009E73", "-"),
         ("g712_8khz", 8000, "G.712 PCM Filter", "#0072B2", "--"),
         ("dir_dc_removal", 8000, "DC Removal HP", "#D55E00", "-."),
     ]:
@@ -525,14 +526,14 @@ def generate_group_charts() -> None:
         ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)
     ax.set(
         ylabel="Magnitude (dB)",
-        title="G.191 Telecom & Conditioning Filters (8 kHz)",
-        xlim=(10, 4000),
+        title="G.191 Telecom & Conditioning Filters",
+        xlim=(10, 8000),
         ylim=(-60, 20),
     )
     ax.set_xlabel("Frequency (Hz)", labelpad=40)
     ax.grid(True, which="both", alpha=0.4)
     ax.legend(loc="lower left")
-    _apply_freq_ticks(ax, 8000)
+    _apply_freq_ticks(ax, 16000)
 
 
 def generate_group_charts_new_families() -> None:

@@ -17,7 +17,7 @@
 ## Overview
 
 ITU-T Recommendation G.191 specifies the standard reference DSP filters used across speech codecs,
-telephony equipment evaluation, perceptual audio quality testing (e.g. PESQ, POLQA), and telecom standardization:
+telephony equipment evaluation, perceptual and instrumental quality testing, and telecom standardization:
 
 - **IRS (Intermediate Reference System)**: Standard 8 kHz, 16 kHz, and Modified IRS 16/48 kHz sending/receiving curves simulating handset frequency characteristics.
 - **Low-Pass Suite**: 48 kHz linear-phase FIR band-limiting filters, named after the ITU-T band
@@ -33,7 +33,7 @@ This package provides:
 
 - **Rust core**: Zero-allocation inner loops, polyphase downsampling/upsampling kernels, and exact coefficient structures.
 - **Python API (`numpy`)**: One-shot batch processing, stateful streaming (`BlockwiseFilter`), impulse response generation, and coefficient access (`b, a` and `SOS`).
-- **Command-line Interface**: Streaming WAV file filtering with zero extra setup.
+- **Command-line Interface**: Streaming WAV file filtering and sine-power frequency response scanning (`freqresp`, STL `fltresp` method) with zero extra setup.
 
 ---
 
@@ -88,6 +88,9 @@ uvx --from "git+https://github.com/jr2804/g191-filter.git@2026.9.13" g191-filter
 # Or inside a project environment with uv run:
 uv run --with git+https://github.com/jr2804/g191-filter.git g191-filter filter \
   mod_irs16khz wideband.wav --output-file filtered.wav --block-size 4096
+
+# Scan frequency response using the STL fltresp sine-power method:
+g191-filter freqresp flat1 --fs 16000 --f0 50 --ff 4000 --fstep 250
 ```
 
 `filter` takes the filter ID and the input WAV as positional arguments; run
@@ -101,7 +104,7 @@ from g191_filter import BlockwiseFilter, filter_array, filter_wave, list_filters
 
 # 1. Inspect available filters
 print(list_filters())
-# ['hq_down_2_to_1', 'hq_down_3_to_1', 'hq_up_1_to_2', 'hq_up_1_to_3', 'flat_band_pass', 'flat1', ...]
+# ['hq_down_2_to_1', 'hq_down_3_to_1', 'hq_up_1_to_2', 'hq_up_1_to_3', 'flat1', 'flat_1_to_2', ...]
 
 # 2. One-shot filtering on a NumPy array
 signal = np.random.randn(16000)
@@ -123,8 +126,8 @@ filter_wave("lp7_48khz", "input_48k.wav", output_file="output_lp7.wav")
 | ------ | ---------- | ----------- | ------------ |
 | **IRS Family** | `irs8khz`, `irs16khz`, `mod_irs16khz`, `mod_irs48khz` | Intermediate Reference System telephony handset responses | 8 / 16 / 48 kHz |
 | **48 kHz Low-Pass** | `lp1p5_48khz`, `lp35_48khz`, `lp7_48khz`, `lp10_48khz`, `lp12_48khz`, `lp14_48khz`, `lp20_48khz` | 48 kHz linear-phase band-limiting shaping filters (gradual roll-off) | 48 kHz |
-| **Resampling** | `hq_down_2_to_1`, `hq_down_3_to_1`, `hq_up_1_to_2`, `hq_up_1_to_3`, `flat_1_to_2`, `flat1`, `iir_down_3_to_1`, `iir_up_1_to_3`, `iir_casc_lp_3_to_1`, `iir_casc_lp_1_to_3` | Decimation & interpolation filters with integrated rate change | 8 / 16 / 48 kHz |
-| **Telecom & DC** | `flat_band_pass`, `g712_8khz`, `stdpcm_16khz`, `stdpcm_2_to_1`, `stdpcm_1_to_2`, `dir_dc_removal` | Flat 300–3400 Hz bandpass, G.712 PCM channel filter (parallel-form IIR, with 2:1/1:2 rate variants), and DC block | 8 / 16 kHz |
+| **Resampling** | `hq_down_2_to_1`, `hq_down_3_to_1`, `hq_up_1_to_2`, `hq_up_1_to_3`, `flat_1_to_2`, `flat_2_to_1`, `iir_down_3_to_1`, `iir_up_1_to_3`, `iir_casc_lp_3_to_1`, `iir_casc_lp_1_to_3` | Decimation & interpolation filters with integrated rate change | 8 / 16 / 48 kHz |
+| **Telecom & DC** | `flat1`, `g712_8khz`, `stdpcm_16khz`, `stdpcm_2_to_1`, `stdpcm_1_to_2`, `dir_dc_removal` | Flat 16 kHz bandpass (3 dB at 98/3462 Hz), G.712 PCM channel filter (parallel-form IIR, with 2:1/1:2 rate variants), and DC block | 8 / 16 kHz |
 | **Weighting & Measurement** | `msin16khz`, `psophometric_8khz`, `dsm16khz`, `hirs16khz`, `tia_irs8khz`, `rx_irs8khz`, `rx_irs16khz`, `p341_16khz` | ITU-T measurement weightings: psophometric noise, P.341, half-tilt IRS, TIA-IRS, delta-SM | 8 / 16 kHz |
 | **Band-Pass (Wideband)** | `bp5k_16khz`, `bp100_5k_16khz`, `bp14k_32khz`, `bp20k_48khz` | Linear-phase band-pass filters from narrowband up to fullband (20 Hz–20 kHz) | 16 / 32 / 48 kHz |
 

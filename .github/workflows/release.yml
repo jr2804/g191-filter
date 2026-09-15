@@ -117,6 +117,13 @@ jobs:
           name: sdist
           path: dist/*.tar.gz
 
+  # Host builds. One interpreter per job: `actions/setup-python` keeps only
+  # one flavour of a given version on PATH (asking for `3.14` and `3.14t`
+  # repoints pythonLocation/LD_LIBRARY_PATH at the free-threaded build and, on
+  # Windows, removes the standard entry), so `--find-interpreter` could only
+  # ever produce one 3.14 flavour per job and the standard 3.14 wheels were
+  # missing everywhere except the manylinux container. Each job therefore
+  # installs exactly one interpreter and builds with `-i <path>`.
   wheels:
     needs: version
     runs-on: ${{ matrix.os }}

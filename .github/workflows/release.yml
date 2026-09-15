@@ -11,8 +11,9 @@ concurrency:
 
 jobs:
   version:
-    # Skip when the push was itself a release-version stamp (bump-after-tag.yml
-    # commits "chore(release): stamp <ver>") — otherwise we'd loop forever.
+    # Skip when the push was itself a release-version stamp — otherwise a
+    # stamp pushed with a PAT (rather than the auto GITHUB_TOKEN, for which
+    # GitHub suppresses downstream triggers) would loop forever.
     if: >-
       github.ref == 'refs/heads/main'
       && !contains(github.event.head_commit.message, 'chore(release): stamp')
@@ -55,6 +56,36 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "needs_tag=true" >> "$GITHUB_OUTPUT"
 
+      # Stamp the released version and commit it to main *before* tagging, so
+      # the tag, the artifacts and the tip of main all agree. Stamping only in
+      # the build jobs' throwaway checkouts (the earlier design) left main
+      # reporting the previous release, and made a tag-pinned
+      # `uv add git+...@<tag>` build a wheel carrying that previous version.
+      # The build jobs then check out the tag and need no sync of their own.
+      #
+      # Each source file has exactly one version line at column 0. Cargo.lock is
+      # addressed by package name because it is full of version lines.
+      - name: Stamp version and push to main
+        if: steps.version.outputs.needs_tag == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ver="${{ steps.version.outputs.version }}"
+          sed -i.bak -E 's/^version = "[^"]+"$/version = "'"$ver"'"/' Cargo.toml
+          sed -i.bak -E 's/^version = "[^"]+"$/version = "'"$ver"'"/' pyproject.toml
+          sed -i.bak -E 's/^__version__ = "[^"]+"$/__version__ = "'"$ver"'"/' python/g191_filter/_version.py
+          sed -i.bak -E '/^name = "g191_filter_core"$/{n;s/^version = .*$/version = "'"$ver"'"/}' Cargo.lock
+          rm -f Cargo.toml.bak pyproject.toml.bak python/g191_filter/_version.py.bak Cargo.lock.bak
+          grep -q "^version = \"$ver\"$" Cargo.toml
+          grep -q "^version = \"$ver\"$" pyproject.toml
+          grep -q "^__version__ = \"$ver\"$" python/g191_filter/_version.py
+          grep -A 1 '^name = "g191_filter_core"$' Cargo.lock | grep -q "^version = \"$ver\"$"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock pyproject.toml python/g191_filter/_version.py
+          git commit -m "chore(release): stamp $ver"
+          git push origin HEAD:main
+
       - name: Create and push tag
         if: steps.version.outputs.needs_tag == 'true'
         shell: bash
@@ -70,26 +101,15 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     steps:
+      # Build the tag, not the triggering commit: the tag carries the stamped
+      # version, so this job needs no version sync.
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.version.outputs.version }}
           fetch-depth: 0
           fetch-tags: true
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      - name: Sync versions to ${{ needs.version.outputs.version }}
-        shell: bash
-        run: |
-          ver="${{ needs.version.outputs.version }}"
-          # POSIX-only sed: replace the literal 0.0.0 placeholder. No GNU
-          # extensions (0,/re/ ranges, empty s// patterns) — BSD sed on
-          # macOS silently no-ops on those, leaving 0.0.0 wheels.
-          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$ver"'"/' Cargo.toml
-          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$ver"'"/' pyproject.toml
-          sed -i.bak -E 's/^__version__ = "0\.0\.0"$/__version__ = "'"$ver"'"/' python/g191_filter/_version.py
-          rm -f Cargo.toml.bak pyproject.toml.bak python/g191_filter/_version.py.bak
-          grep -q "^version = \"$ver\"$" Cargo.toml
-          grep -q "^version = \"$ver\"$" pyproject.toml
-          grep -q "^__version__ = \"$ver\"$" python/g191_filter/_version.py
       - name: Build sdist
         run: uv build --sdist
       - uses: actions/upload-artifact@v4
@@ -116,20 +136,8 @@ jobs:
             target: x86_64
     steps:
       - uses: actions/checkout@v4
-
-      - name: Sync versions to ${{ needs.version.outputs.version }}
-        shell: bash
-        run: |
-          ver="${{ needs.version.outputs.version }}"
-          # POSIX-only sed: replace the literal 0.0.0 placeholder (works on
-          # GNU and BSD sed alike — see the sdist job comment).
-          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$ver"'"/' Cargo.toml
-          sed -i.bak -E 's/^version = "0\.0\.0"$/version = "'"$ver"'"/' pyproject.toml
-          sed -i.bak -E 's/^__version__ = "0\.0\.0"$/__version__ = "'"$ver"'"/' python/g191_filter/_version.py
-          rm -f Cargo.toml.bak pyproject.toml.bak python/g191_filter/_version.py.bak
-          grep -q "^version = \"$ver\"$" Cargo.toml
-          grep -q "^version = \"$ver\"$" pyproject.toml
-          grep -q "^__version__ = \"$ver\"$" python/g191_filter/_version.py
+        with:
+          ref: ${{ needs.version.outputs.version }}
 
       # macOS, Windows, and non-manylinux Linux builds run on the host, so
       # they need explicit interpreter installation. The Linux aarch64 job

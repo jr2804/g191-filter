@@ -108,18 +108,20 @@ Full guides and references:
 - [API Reference](https://jr2804.github.io/g191-filter/reference/api/)
 - [Development & Contributing](https://jr2804.github.io/g191-filter/development/)
 
-### Installing from a non-tagged git ref
+### Version reported by a git install
 
-`uv add git+...` (or `pip install git+...`) runs maturin against whatever
-`Cargo.toml` is at the pinned commit. The committed `Cargo.toml` placeholder
-is `0.0.0`, so non-tagged installs report `g191-filter==0.0.0`. To get the
-real CalVer in the wheel, either:
+Every push to `main` is released: the release workflow stamps the CalVer into
+`Cargo.toml`, `Cargo.lock`, `pyproject.toml` and
+`python/g191_filter/_version.py`, commits that to `main`, and tags that commit.
+A git install therefore reports the version of the release it was built from —
+head of `main` reports the most recent release, and a tag-pinned install reports
+exactly that tag:
 
-- Pin to a release tag: `uv add "git+https://...@v2026.9.13"`, or
-- After cloning, run `uv run python scripts/install_from_git.py` which
-  patches `Cargo.toml` from the most recent reachable CalVer tag and
-  invokes `maturin develop --release` for you. Override with `--version
-  YYYY.M.N` if there is no reachable tag.
+```bash
+uv add "git+https://github.com/jr2804/g191-filter.git@2026.9.13"
+```
+
+There is no `0.0.0` placeholder to work around for either case.
 
 ---
 

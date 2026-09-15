@@ -1,9 +1,9 @@
 [package]
 name = "g191_filter_core"
-# CalVer YYYY.M.N is the single source of truth; the release workflow (and
-# scripts/install_from_git.py) rewrite this line before running maturin
-# build, together with pyproject.toml and python/g191_filter/_version.py.
-# Local dev builds get "0.0.0" (mismatch with releases is expected).
+# CalVer YYYY.M.N is the single source of truth. The release workflow stamps
+# this line, pyproject.toml, python/g191_filter/_version.py and Cargo.lock and
+# commits them to main before tagging, so head and every tag agree. The value
+# left in the tree is therefore always the most recent release.
 version = "2026.9.10"
 edition = "2021"
 license = "MIT"

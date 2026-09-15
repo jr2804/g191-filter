@@ -1,9 +1,10 @@
 """Build-time version stamp.
 
-Patched by the release workflow (and scripts/install_from_git.py) together
-with Cargo.toml / pyproject.toml. Kept as a literal so that `g191_filter
-.__version__` works even in editable installs (`maturin develop`), where
-importlib.metadata has no dist-info to read.
+Stamped by the release workflow together with Cargo.toml / Cargo.lock /
+pyproject.toml, and committed to main before the tag is created. Kept as a
+literal so that `g191_filter.__version__` reports the right value even in
+editable installs (`maturin develop`), where importlib.metadata has no
+dist-info to read.
 """
 
 __version__ = "2026.9.10"

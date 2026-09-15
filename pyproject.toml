@@ -4,7 +4,7 @@ name = "g191-filter"
 # Cargo.toml's `[package] version`, Cargo.lock and
 # python/g191_filter/_version.py, and commits them to main before tagging,
 # so wheel METADATA, the sdist PKG-INFO and every git install agree.
-version = "2026.9.10"
+version = "2026.9.12"
 description = "IIR/FIR filters according to Recommendation ITU-T G.191 (Software Tool Library). Provided at arbitrary sampling rates and in many formats"
 readme = "README.md"
 license = { text = "MIT" }

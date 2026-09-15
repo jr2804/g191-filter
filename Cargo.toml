@@ -4,7 +4,7 @@ name = "g191_filter_core"
 # this line, pyproject.toml, python/g191_filter/_version.py and Cargo.lock and
 # commits them to main before tagging, so head and every tag agree. The value
 # left in the tree is therefore always the most recent release.
-version = "2026.9.10"
+version = "2026.9.12"
 edition = "2021"
 license = "MIT"
 authors = ["Jan.Reimes <jan.reimes@head-acoustics.com>"]

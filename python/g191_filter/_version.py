@@ -7,4 +7,4 @@ editable installs (`maturin develop`), where importlib.metadata has no
 dist-info to read.
 """
 
-__version__ = "2026.9.10"
+__version__ = "2026.9.12"

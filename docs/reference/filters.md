@@ -470,6 +470,16 @@ Brickwall-style band-pass filters for splitting signal bands (P.50-type measurem
 
 High-quality interpolation filters for 1:2 and 1:3 upsampling, reusing the HQ down-sampler coefficient set with the `fir_upsampling_kernel` and appropriate gain.
 
+!!! info "Frequency Axis Interpretation for Upsampling Filters"
+    In digital signal processing, an interpolation filter operates by zero-inserting input samples
+    followed by continuous FIR convolution at the **output** rate ($f_{s,\text{out}} = L \times f_{s,\text{in}}$).
+    The impulse responses and frequency responses shown below are plotted against the filter's native
+    **input** sampling rate ($f_{s,\text{in}} = 8\text{ kHz}$, with Nyquist $4\text{ kHz}$). In this normalized
+    domain, the anti-imaging cutoff appears at $f_{s,\text{in}} / (2L)$ (e.g. $\approx 1.8\text{ kHz}$ for $L=2$,
+    and $\approx 1.2\text{ kHz}$ for $L=3$). When viewed relative to the output sampling rate ($16\text{ kHz}$
+    or $24\text{ kHz}$), the anti-imaging low-pass cutoff precisely eliminates spectral images above the
+    original $4\text{ kHz}$ input Nyquist band ($3.4\text{–}3.6\text{ kHz}$).
+
 #### Family Response
 
 <p align="center">

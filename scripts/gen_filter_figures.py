@@ -534,6 +534,7 @@ def generate_group_charts() -> None:
     ax.grid(True, which="both", alpha=0.4)
     ax.legend(loc="lower left")
     _apply_freq_ticks(ax, 16000)
+    _finalize(fig, OUT_DIR / "telecom_family.svg")
 
 
 def generate_group_charts_new_families() -> None:
@@ -541,14 +542,14 @@ def generate_group_charts_new_families() -> None:
     # 5. Weighting / Measurement FIR Family
     fig, ax = plt.subplots(figsize=(7.4, 4.2))
     for fid, sr, lbl, col, ls in [
-        ("msin16khz", 16000, "MSIN HP", "#e69f00", "-"),
-        ("psophometric_8khz", 8000, "Psophometric", "#cc79a7", "--"),
-        ("dsm16khz", 16000, "Delta-Sigma", "#56b4e9", "-"),
-        ("hirs16khz", 16000, "Half-Tilt IRS", "#f0e442", "-."),
-        ("tia_irs8khz", 8000, "TIA IRS", "#009e73", "-"),
-        ("rx_irs8khz", 8000, "Rx IRS 8k", "#d55e00", "--"),
-        ("rx_irs16khz", 16000, "Rx IRS 16k", "#e69f00", "-"),
-        ("p341_16khz", 16000, "P.341", "#8b5cf6", "-."),
+        ("msin16khz", 16000, "MSIN HP", "#0072B2", "-"),
+        ("psophometric_8khz", 8000, "Psophometric", "#D55E00", "--"),
+        ("dsm16khz", 16000, "Delta-Sigma", "#009E73", "-"),
+        ("hirs16khz", 16000, "Half-Tilt IRS", "#CC79A7", "-."),
+        ("tia_irs8khz", 8000, "TIA IRS", "#56B4E9", "-"),
+        ("rx_irs8khz", 8000, "Rx IRS 8k", "#E69F00", "--"),
+        ("rx_irs16khz", 16000, "Rx IRS 16k", "#7E2F8E", "-"),
+        ("p341_16khz", 16000, "P.341", "#000000", "-."),
     ]:
         w, m = _response(fid, 2048, sr, 10)
         ax.semilogx(w, m, color=col, linestyle=ls, label=lbl)

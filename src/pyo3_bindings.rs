@@ -11,11 +11,17 @@ use std::path::PathBuf;
 
 use crate::{
     build_filter, get_coefficients_ba, get_coefficients_sos, get_filter_config, list_filter_ids, filter_info,
-    BlockwiseFilter, CascadeIirFilter, Coefficients, DirectIirFilter, FilterId, FilterState,
-    FilterType, FirFilter, IirFilter,
+    BlockwiseFilter, CascadeIirFilter, Coefficients, DirectIirFilter, FilterId, FilterState, FilterType, IirFilter,
 };
 
-/// Filter a wave file
+/// Filter a WAV file, rate-aware.
+///
+/// The operational rate is `sample_rate` if given, else the rate from the
+/// WAV header. The input is resampled to the operational rate if needed;
+/// 1:1 filters then adapt their characteristic to it (resampling to the
+/// design rate and back), while rate-conversion filters apply their
+/// integrated ratio on top. The output is written at the operational rate
+/// scaled by the filter's ratio, preserving the input sample format.
 #[pyfunction]
 #[pyo3(signature = (filter_id, input_file, output_file=None, sample_rate=None, inplace=false, block_size=None))]
 fn filter_wave(
@@ -28,7 +34,6 @@ fn filter_wave(
 ) -> PyResult<String> {
     let fid = FilterId::from_str(filter_id)
         .map_err(PyValueError::new_err)?;
-
     let config = get_filter_config(fid)
         .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
 
@@ -43,96 +48,59 @@ fn filter_wave(
         })
     };
 
-    let (samples, original_sr, orig_fmt, orig_bits) = read_wav(input_file)?;
+    let (samples, header_sr, orig_fmt, orig_bits) = read_wav(input_file)?;
 
-    let (resampled, effective_sr) = if let Some(target_sr) = sample_rate {
-        if target_sr != original_sr {
-            let resampler = crate::Resampler::new(original_sr, target_sr);
-            let resampled = resampler.resample(&samples);
-            (resampled, target_sr)
-        } else {
-            (samples, original_sr)
-        }
+    // Operational rate: declared override, else the header rate.
+    let op_rate = sample_rate.unwrap_or(header_sr);
+    if op_rate <= 0.0 {
+        return Err(PyValueError::new_err(format!("sample_rate must be positive, got {op_rate}")));
+    }
+    let input = if (op_rate - header_sr).abs() > 1.0e-9 * header_sr {
+        crate::Resampler::new(header_sr, op_rate).resample(&samples)
     } else {
-        (samples, original_sr)
+        samples
     };
 
-    let filtered = if let Some(bs) = block_size {
-        let bs = bs.max(1);
-        let mut bw = BlockwiseFilter::new(fid, bs)
-            .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
-        bw.process_all(&resampled)
-    } else {
-        match &config.coefficients {
-            Coefficients::Fir { h0 } => {
-                let hswitch = if config.ratio_num > config.ratio_den { 'U' } else { 'D' };
-                let dwn_up = if hswitch == 'U' { config.ratio_num } else { config.ratio_den };
-                let mut filter = FirFilter::new(h0, config.gain, dwn_up, hswitch);
-                filter.process_block(&resampled)
-            }
-            Coefficients::IirParallel { gain, direct, b, c } => {
-                let mut filter = IirFilter::new(*gain, *direct, b, c, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
-                filter.process_block(&resampled)
-            }
-            Coefficients::IirCascade { gain, b, a } => {
-                let mut filter = CascadeIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
-                filter.process_block(&resampled)
-            }
-            Coefficients::IirDirect { gain, b, a } => {
-                let mut filter = DirectIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
-                filter.process_block(&resampled)
-            }
-        }
-    };
+    // filter_samples adapts 1:1 filters to op_rate; rate-conversion filters
+    // run verbatim (their ratio is applied on top for the output rate).
+    let filtered = crate::filter_samples(fid, &input, Some(op_rate), block_size)
+        .map_err(PyValueError::new_err)?;
 
-    write_wav(&out_file, &filtered, effective_sr, orig_fmt, orig_bits)?;
+    let out_rate = op_rate * config.ratio_num as f64 / config.ratio_den as f64;
+    write_wav(&out_file, &filtered, out_rate, orig_fmt, orig_bits)?;
     Ok(out_file)
 }
 
 /// Filter a numpy array (internally blockwise with configurable block size)
+/// Filter a numpy array.
+///
+/// Without `sample_rate`, the coefficients are applied verbatim (STL
+/// semantics): the data must be sampled at the filter's design rate (see
+/// `get_filter_info(filter_id)["sample_rate"]`).
+///
+/// With `sample_rate=fs`, the filter's characteristic is applied at that
+/// rate: mismatched rates are handled internally by resampling the signal
+/// to the design rate and back, so a 16 kHz IRS response applied to 48 kHz
+/// data yields the correct response (and band-limits the signal to the
+/// design Nyquist). Output length always equals the input length.
+/// Rate-conversion filters (`*_to_1` / `1_to_*`) perform their integrated
+/// rate change themselves; `sample_rate` is accepted but does not trigger
+/// resampling for them.
 #[pyfunction]
-#[pyo3(signature = (filter_id, input_array, block_size=None))]
+#[pyo3(signature = (filter_id, input_array, block_size=None, sample_rate=None))]
 fn filter_array<'py>(
     py: Python<'py>,
     filter_id: &str,
     input_array: PyReadonlyArray1<'py, f64>,
     block_size: Option<usize>,
+    sample_rate: Option<f64>,
 ) -> PyResult<Bound<'py, PyArray1<f64>>> {
     let fid = FilterId::from_str(filter_id)
         .map_err(PyValueError::new_err)?;
 
-    // block_size=None means no chunking (one-shot processing).
-    // Explicit chunking is available via BlockwiseFilter for streaming use cases.
     let input = input_array.as_array().to_vec();
-    let filtered = if let Some(bs) = block_size {
-        let bs = bs.max(1);
-        let mut bw = BlockwiseFilter::new(fid, bs)
-            .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
-        bw.process_all(&input)
-    } else {
-        let config = get_filter_config(fid)
-            .ok_or_else(|| PyValueError::new_err(format!("Filter {filter_id} not found")))?;
-        match &config.coefficients {
-            Coefficients::Fir { h0 } => {
-                let hswitch = if config.ratio_num > config.ratio_den { 'U' } else { 'D' };
-                let dwn_up = if hswitch == 'U' { config.ratio_num } else { config.ratio_den };
-                let mut filter = FirFilter::new(h0, config.gain, dwn_up, hswitch);
-                filter.process_block(&input)
-            }
-            Coefficients::IirParallel { gain, direct, b, c } => {
-                let mut filter = IirFilter::new(*gain, *direct, b, c, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
-                filter.process_block(&input)
-            }
-            Coefficients::IirCascade { gain, b, a } => {
-                let mut filter = CascadeIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
-                filter.process_block(&input)
-            }
-            Coefficients::IirDirect { gain, b, a } => {
-                let mut filter = DirectIirFilter::new(*gain, b, a, config.ratio_num.max(config.ratio_den), config.ratio_num > config.ratio_den);
-                filter.process_block(&input)
-            }
-        }
-    };
+    let filtered = crate::filter_samples(fid, &input, sample_rate, block_size)
+        .map_err(PyValueError::new_err)?;
 
     Ok(PyArray1::from_vec(py, filtered))
 }

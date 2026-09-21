@@ -39,3 +39,13 @@ BlockSizeOption = Annotated[
         min=1,
     ),
 ]
+
+SampleRateOption = Annotated[
+    float | None,
+    typer.Option(
+        "--sample-rate",
+        "-r",
+        help="Operational sample rate in Hz (default: input file header rate)",
+        min=1,
+    ),
+]

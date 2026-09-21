@@ -58,6 +58,46 @@ print(f"Input shape: {signal.shape}, Output shape: {filtered_signal.shape}")
 | `filter_id` | `str` | *required* | Filter identifier (e.g. `'irs8khz'`, `'lp7_48khz'`). |
 | `input_array` | `np.ndarray` | *required* | 1D NumPy array containing input audio samples. |
 | `block_size` | `int` or `None` | `None` | `None` for one-shot convolution; integer for internal chunking. |
+| `sample_rate` | `float` or `None` | `None` | Operational rate of the input data (see below). |
+
+#### Working at Non-Native Sample Rates
+
+G.191 filters are *designed* at a specific rate (exposed by
+`get_filter_info(filter_id)["sample_rate"]`, e.g. 16 kHz for `rx_irs16khz`).
+The `sample_rate` parameter tells the library the operational rate of your
+data:
+
+- **`sample_rate=None` (default):** STL verbatim semantics — the data is
+  assumed to sit at the design rate and the coefficients are applied as-is.
+  Feeding 48 kHz data to a 16 kHz filter this way scales every designed
+  frequency by 3 (the `rx_irs16khz` low-pass corner moves from 3617 Hz to
+  10851 Hz). This matches the behavior of the STL command-line tool and is
+  useful for conformance testing — but it is a silent footgun in application
+  code.
+- **`sample_rate=fs`, 1:1 filters:** if `fs` matches the design rate the
+  filter runs directly; otherwise the signal is resampled to the design
+  rate, filtered, and resampled back to `fs`. The native response is
+  preserved at any operational rate, content above the design Nyquist is
+  removed (the physically correct device model), and the output length
+  equals the input length.
+- **`sample_rate=fs`, rate-conversion filters (`*_to_1` / `1_to_*`):**
+  accepted at any rate without resampling — these filters perform their
+  integrated rate change themselves (output rate = `fs * ratio`), so there
+  is nothing to adapt.
+
+```python
+# NB/WB device simulation on a 48 kHz pipeline:
+data_48k = np.random.default_rng(0).standard_normal(48000)
+
+nb = filter_array("rx_irs16khz", data_48k, sample_rate=48000.0)  # corner stays at 3617 Hz
+wb = filter_array("p341_16khz", data_48k, sample_rate=48000.0)   # corner stays at 6998 Hz
+```
+
+There is no 48 kHz variant of the P.341 send characteristic in G.191 (only
+the IRS family has one, `mod_irs48khz`); the canonical way to apply the WB
+send mask in a 48 kHz pipeline is therefore
+`filter_array("p341_16khz", x, sample_rate=48000.0)` — not `lp7_48khz`,
+which is a plain bandwidth-limiting low-pass without the P.341 mask shape.
 
 ---
 
@@ -91,9 +131,17 @@ filter_wave(
 | `filter_id` | `str` | *required* | Filter identifier. |
 | `input_file` | `str` | *required* | Path to input WAV audio file. |
 | `output_file` | `str` or `None` | `None` | Output path. If omitted and `inplace=False`, appends `_filtered.wav`. |
-| `sample_rate` | `float` or `None` | `None` | Target sample rate. If different from input, applies internal resampling. |
+| `sample_rate` | `float` or `None` | `None` | Operational rate override (default: input file header rate). See below. |
 | `inplace` | `bool` | `False` | When `True`, safely overwrites `input_file`. |
 | `block_size` | `int` or `None` | `None` | Internal block size for streaming file I/O. |
+
+Like `filter_array`, `filter_wave` is rate-aware: the operational rate is
+taken from the WAV header (or the `sample_rate` override). 1:1 filters
+adapt their characteristic to it — a 16 kHz IRS response applied to a
+48 kHz file yields the correct response at 48 kHz — while rate-conversion
+filters apply their integrated ratio and the output file is written at the
+resulting rate (e.g. `hq_down_2_to_1` on a 16 kHz file writes an 8 kHz
+file).
 
 ---
 

@@ -26,10 +26,18 @@ def filter(
     input_file: args.InputWaveFile,
     output_file: args.OutputFileArg = None,
     block_size: args.BlockSizeOption = 8192,
+    sample_rate: args.SampleRateOption = None,
 ) -> None:
-    """Apply a G.191 filter to a WAV file in chunks (streaming)."""
+    """Apply a G.191 filter to a WAV file (rate-aware).
+
+    1:1 weighting filters adapt to the operational rate (default: the input
+    file's header rate): data is resampled to the filter's design rate and
+    back, so a 16 kHz IRS response correctly applies to 48 kHz audio.
+    Rate-conversion filters (*_to_1 / 1_to_*) apply their integrated ratio;
+    the output file is written at the resulting rate.
+    """
     out_path = output_file if output_file else input_file
-    filter_wave(filter_id, input_file, output_file=out_path, block_size=block_size)
+    filter_wave(filter_id, input_file, output_file=out_path, block_size=block_size, sample_rate=sample_rate)
     typer.echo(f"Filtered {input_file} -> {out_path} with {filter_id} (block_size={block_size})")
 
 

@@ -334,6 +334,68 @@ impl FilterInstance {
     }
 }
 
+/// One-shot filtering with optional input-rate adaptation.
+///
+/// * `sample_rate = None` — STL verbatim semantics: the data is assumed to be
+///   at the filter's design rate and the coefficients are applied as-is.
+/// * `sample_rate = Some(fs)`, 1:1 filter, `fs` matching the design rate
+///   (within 0.1 %) — identical to `None`.
+/// * `sample_rate = Some(fs)`, 1:1 filter, `fs` mismatched — the input is
+///   resampled to the design rate, filtered, and the result is resampled
+///   back to `fs`. Output length equals `input.len()`. Content above the
+///   design Nyquist frequency is removed, which is the physically correct
+///   model for a characteristic referenced to the design rate (e.g. a
+///   16 kHz IRS receive response applied to 48 kHz data also band-limits
+///   the signal to 8 kHz).
+/// * `sample_rate = Some(fs)`, rate-conversion filter (`ratio_num !=
+///   `ratio_den`) — accepted at any rate without resampling: these filters
+///   already perform an integrated rate change (output rate = `fs *
+///   ratio_num / ratio_den`), so there is nothing to adapt. `fs` is
+///   informational only.
+pub fn filter_samples(
+    filter_id: FilterId,
+    input: &[f64],
+    sample_rate: Option<f64>,
+    block_size: Option<usize>,
+) -> Result<Vec<f64>, String> {
+    let config = get_filter_config(filter_id)
+        .ok_or_else(|| format!("Filter {filter_id} not found"))?;
+
+    let run = |x: &[f64]| -> Vec<f64> {
+        match block_size {
+            Some(bs) => {
+                let mut bw = BlockwiseFilter::new(filter_id, bs.max(1))
+                    .expect("filter exists, config was resolved");
+                bw.process_all(x)
+            }
+            None => build_filter(&config).process(x),
+        }
+    };
+
+    let Some(fs) = sample_rate else { return Ok(run(input)) };
+    if fs <= 0.0 || fs.is_nan() {
+        return Err(format!("sample_rate must be positive, got {fs}"));
+    }
+
+    // Rate-conversion filters change the rate themselves; verbatim is correct.
+    if config.ratio_num != config.ratio_den {
+        return Ok(run(input));
+    }
+
+    let design = config.sample_rate;
+    if (fs - design).abs() <= 1.0e-3 * design {
+        return Ok(run(input));
+    }
+
+    // Rate adaptation: fs -> design -> filter -> design -> fs.
+    let down = crate::Resampler::new(fs, design).resample(input);
+    let filtered = run(&down);
+    let mut out = crate::Resampler::new(design, fs).resample(&filtered);
+    // Enforce the length contract: round-trip rounding may differ by a sample.
+    out.resize(input.len(), 0.0);
+    Ok(out)
+}
+
 /// Configuration of a filter
 #[derive(Debug, Clone)]
 pub struct FilterConfig {
@@ -814,4 +876,75 @@ fn parallel_to_ba(b: &[[f64; 3]], c: &[[f64; 2]], gain: f64, direct: f64) -> (Ve
         }
     }
     (b_out, a_out)
+}
+
+#[cfg(test)]
+mod filter_samples_tests {
+    use super::*;
+    use std::f64::consts::PI;
+
+    /// Steady-state gain (dB) of a tone at `freq` through `filter_samples`.
+    fn tone_gain_db(filter_id: FilterId, freq: f64, fs: f64, rate: Option<f64>) -> f64 {
+        let n = (fs * 0.5) as usize; // 0.5 s, discard 25 % at each edge
+        let x: Vec<f64> = (0..n).map(|i| (2.0 * PI * freq * i as f64 / fs).sin()).collect();
+        let y = filter_samples(filter_id, &x, rate, None).expect("filter_samples failed");
+        let (lo, hi) = (n / 4, 3 * n / 4);
+        let px = x[lo..hi].iter().map(|v| v * v).sum::<f64>() / (hi - lo) as f64;
+        let py = y[lo..hi].iter().map(|v| v * v).sum::<f64>() / (hi - lo) as f64;
+        10.0 * (py / px).log10()
+    }
+
+    #[test]
+    fn design_rate_matches_verbatim() {
+        let x: Vec<f64> = (0..4096).map(|i| (i as f64 * 0.01).sin()).collect();
+        let verbatim = filter_samples(FilterId::RxIrs16, &x, None, None).unwrap();
+        let explicit = filter_samples(FilterId::RxIrs16, &x, Some(16000.0), None).unwrap();
+        assert_eq!(verbatim, explicit);
+    }
+
+    #[test]
+    fn rate_adapted_passband_gain_matches_native() {
+        // 1 kHz lies in both passbands: adapted 48 kHz path must reproduce
+        // the native 16 kHz gain (IRS receive response).
+        let native = tone_gain_db(FilterId::RxIrs16, 1000.0, 16000.0, None);
+        let adapted = tone_gain_db(FilterId::RxIrs16, 1000.0, 48000.0, Some(48000.0));
+        assert!((native - adapted).abs() < 0.3, "native {native:.2} dB vs adapted {adapted:.2} dB");
+    }
+
+    #[test]
+    fn rate_adapted_bandlimits_above_design_nyquist() {
+        // 10 kHz content must be removed: a 16 kHz-referenced characteristic
+        // cannot pass it (design Nyquist 8 kHz).
+        let g = tone_gain_db(FilterId::RxIrs16, 10000.0, 48000.0, Some(48000.0));
+        assert!(g < -30.0, "10 kHz tone gained {g:.2} dB");
+    }
+
+    #[test]
+    fn rate_adapted_preserves_length() {
+        let x: Vec<f64> = (0..47999).map(|i| ((i as f64) * 0.001).sin()).collect(); // odd length on purpose
+        let y = filter_samples(FilterId::RxIrs16, &x, Some(48000.0), None).unwrap();
+        assert_eq!(y.len(), x.len());
+    }
+
+    #[test]
+    fn rate_converter_accepts_any_declared_rate() {
+        // HQ3 3:1 decimation is rate-agnostic: the canonical STL use is
+        // 48 kHz in -> 16 kHz out. Any declared rate is accepted verbatim.
+        let x: Vec<f64> = (0..4800).map(|i| ((i as f64) * 0.01).sin()).collect();
+        let y48 = filter_samples(FilterId::HQDown3To1, &x, Some(48000.0), None).unwrap();
+        let y16 = filter_samples(FilterId::HQDown3To1, &x, Some(16000.0), None).unwrap();
+        let verbatim = filter_samples(FilterId::HQDown3To1, &x, None, None).unwrap();
+        assert_eq!(y48, verbatim);
+        assert_eq!(y16, verbatim);
+        assert_eq!(y48.len(), x.len() / 3);
+    }
+
+    #[test]
+    fn blockwise_matches_oneshot_with_rate() {
+        let x: Vec<f64> = (0..8000).map(|i| (2.0 * PI * 440.0 * i as f64 / 48000.0).sin()).collect();
+        let one = filter_samples(FilterId::RxIrs16, &x, Some(48000.0), None).unwrap();
+        let chunked = filter_samples(FilterId::RxIrs16, &x, Some(48000.0), Some(1024)).unwrap();
+        let max_diff = one.iter().zip(&chunked).map(|(a, b)| (a - b).abs()).fold(0.0, f64::max);
+        assert!(max_diff < 1e-9, "blockwise diverged by {max_diff}");
+    }
 }

@@ -23,6 +23,11 @@ ndarray = "0.15"
 hound = "3.5"
 pyo3 = { version = "0.29", features = ["extension-module"] }
 numpy = "0.29"
+# Fast f64 FFT for the OLA fast path of the 1:1 FIR kernel. Pure-Rust, no
+# transitive C deps, MIT OR Apache-2.0. The fast path is selected only for
+# dwn_up == 1 and h0.len() >= OLA_THRESHOLD, so the rate-change kernels and
+# small 1:1 kernels still use the original direct convolution.
+rustfft = "6.2"
 
 [profile.release]
 opt-level = 3

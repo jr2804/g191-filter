@@ -37,15 +37,15 @@ OLA_THRESHOLD = 256
 BLOCK_SIZES = [1, 7, 64, 256, 1024, 4096, 65536]
 SNAPSHOT_OFFSETS = [0, 1, 1024, 100000]
 OLA_FILTERS = [fid for fid in list_filters() if "ratio_num" not in dir() or get_filter_info(fid)["ratio_num"] == get_filter_info(fid)["ratio_den"]]
-# OLA-eligible 1:1 FIRs (dwn_up == 1 AND length >= threshold)
+# OLA-eligible 1:1 FIR filters (dwn_up == 1 AND length >= threshold)
 OLA_FILTERS = [
     fid for fid in OLA_FILTERS
     if get_filter_info(fid)["ratio_num"] == 1
     and get_filter_info(fid)["ratio_den"] == 1
     and get_filter_info(fid)["length"] >= OLA_THRESHOLD
 ]
-# Direct-path 1:1 FIRs (small enough to stay on the direct path; must remain
-# bit-exact under any block_size sweep)
+# Direct-path 1:1 FIR filters (small enough to stay on the direct path;
+# must remain bit-exact under any block_size sweep)
 DIRECT_FILTERS = [
     fid for fid in list_filters()
     if get_filter_info(fid)["ratio_num"] == 1

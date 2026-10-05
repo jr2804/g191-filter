@@ -19,12 +19,19 @@ The OLA path is selected for dwn_up == 1 and h0.len() >= OLA_THRESHOLD
 from __future__ import annotations
 
 import os
+
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
 import numpy as np
 import pytest
 
-from g191_filter import BlockwiseFilter, filter_array, get_filter_info, list_filters
+from g191_filter import (
+    BlockwiseFilter,
+    filter_array,
+    get_coefficients_ba_py,
+    get_filter_info,
+    list_filters,
+)
 
 OLA_THRESHOLD = 256
 BLOCK_SIZES = [1, 7, 64, 256, 1024, 4096, 65536]
@@ -67,7 +74,8 @@ _LENGTH_BUGGED = {"g712_8khz", "stdpcm_16khz", "stdpcm_2_to_1", "iir_casc_lp_3_t
 def test_output_length_equals_input(filter_id: str) -> None:
     """The per-call output length is the input length divided by ratio_den and
     multiplied by ratio_num (rate-conversion filters) — i.e. `output == input
-    * ratio_num / ratio_den`. lib.rs:926 asserts equality for the 1:1 case."""
+    * ratio_num / ratio_den`. lib.rs:926 asserts equality for the 1:1 case.
+    """
     if filter_id in _LENGTH_BUGGED:
         pytest.skip(f"{filter_id}: pre-existing 1:1 IIR length bug, unrelated to OLA")
     info = get_filter_info(filter_id)
@@ -120,7 +128,8 @@ def test_n_block_equals_one_block_direct(filter_id: str) -> None:
 def test_snapshot_restore_ola(filter_id: str) -> None:
     """Snapshot mid-stream + restore on a fresh filter gives the same
     output as a single one-shot call. Per bsqp-2's clarification this is
-    an allclose test, not a bit-exact one (FFT-OA add-order noise ~1e-13)."""
+    an allclose test, not a bit-exact one (FFT-OA add-order noise ~1e-13).
+    """
     info = get_filter_info(filter_id)
     sr = int(info["sample_rate"])
     rng = np.random.default_rng(99)
@@ -135,10 +144,7 @@ def test_snapshot_restore_ola(filter_id: str) -> None:
         # tail processing use distinct state.
         bw_head = BlockwiseFilter(filter_id, 4096)
         head = np.asarray(x[:off])
-        if len(head):
-            head_out = np.asarray(bw_head.process_all(head))
-        else:
-            head_out = np.zeros(0)
+        head_out = np.asarray(bw_head.process_all(head)) if len(head) else np.zeros(0)
         snap = bw_head.state
         bw_tail = BlockwiseFilter(filter_id, 4096)
         bw_tail.state = snap
@@ -155,8 +161,8 @@ def test_snapshot_restore_ola(filter_id: str) -> None:
 @pytest.mark.parametrize("filter_id", OLA_FILTERS)
 def test_ola_matches_numpy_direct_convolution(filter_id: str) -> None:
     """OLA output must match the (rate-aware) numpy direct convolution
-    of the same coefficients to f64 precision."""
-    from g191_filter import get_coefficients_ba_py
+    of the same coefficients to f64 precision.
+    """
     info = get_filter_info(filter_id)
     sr = int(info["sample_rate"])
     rng = np.random.default_rng(123)
@@ -165,13 +171,9 @@ def test_ola_matches_numpy_direct_convolution(filter_id: str) -> None:
     # The Rust filter applies a per-filter gain (e.g. -1.0 for mod_irs16/mod_irs48
     # per the STL polarity-inversion rule); get_coefficients_ba does not bake
     # this gain into the returned b. Apply the same gain the OLA path uses
-    # to construct the reference.
-    b = b * info.get("ratio_num", 1)  # placeholder; the actual gain is in
-                                      # the Rust config; we approximate by
-                                      # using the only such case: the two
-                                      # mod_irs filters with gain -1.0.
-    # The actual rule: FilterConfig.gain. For now, only the two mod_irs
-    # filters have non-unit gain (-1.0); the rest have +1.0.
+    # to construct the reference. The actual rule: FilterConfig.gain. For
+    # now, only the two mod_irs filters have non-unit gain (-1.0); the rest
+    # have +1.0.
     if filter_id in ("mod_irs16khz", "mod_irs48khz"):
         b = [-v for v in b]
     y_ref = np.convolve(x, b)[:len(x)]

@@ -54,6 +54,11 @@ jobs:
     - name: Install dependencies
       run: mise dev
 
+    # pyo3, numpy and the bindings are behind the default `python` feature;
+    # keep the crate usable as a pure-Rust dependency without them.
+    - name: Check pure-Rust build
+      run: cargo build --no-default-features
+
     - name: Run linter
       run: mise lint
 

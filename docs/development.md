@@ -29,6 +29,17 @@ The Python interface binds to the Rust crate `_native` compiled via PyO3:
 uvx maturin develop --release
 ```
 
+### Pure-Rust Build
+
+The `python` Cargo feature (PyO3, numpy, and WAV I/O) is enabled by default.
+Rust-only consumers can disable it:
+
+```bash
+cargo build --no-default-features
+```
+
+This builds the rlib without the Python bindings.
+
 ### Running Tests
 
 Integration and unit tests verify filter coefficients, frequency responses, state consistency, and output equivalence against the ITU-T reference suite.

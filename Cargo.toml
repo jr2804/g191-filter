@@ -14,15 +14,21 @@ description = "Rust core for ITU-T G.191 FIR/IIR filters"
 # The lib name IS the Python module name. maturin builds wheels with the
 # compiled extension as `g191_filter/g191_filter.{so,pyd}` and our user
 # wrapper at `python/g191_filter/__init__.py` does
-# `from .g191_filter import *` to re-export Rust functions.
+# `from .g191_filter import *` to re-export Rust functions. The rlib target
+# lets Rust consumers depend on the crate with default-features = false.
 name = "g191_filter"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Python bindings are opt-in at the Cargo level but enabled by default so
+# maturin and existing users keep building the extension unchanged.
+default = ["python"]
+python = ["dep:pyo3", "dep:numpy", "dep:hound"]
 
 [dependencies]
-ndarray = "0.15"
-hound = "3.5"
-pyo3 = { version = "0.29", features = ["extension-module"] }
-numpy = "0.29"
+hound = { version = "3.5", optional = true }
+pyo3 = { version = "0.29", features = ["extension-module"], optional = true }
+numpy = { version = "0.29", optional = true }
 # Fast f64 FFT for the OLA fast path of the 1:1 FIR kernel. Pure-Rust, no
 # transitive C deps, MIT OR Apache-2.0. The fast path is selected only for
 # dwn_up == 1 and h0.len() >= OLA_THRESHOLD, so the rate-change kernels and

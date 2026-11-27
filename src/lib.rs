@@ -5,6 +5,7 @@ mod filter_id;
 mod fir;
 mod iir;
 mod resample;
+#[cfg(feature = "python")]
 mod pyo3_bindings;
 
 pub mod coeffs_generated;

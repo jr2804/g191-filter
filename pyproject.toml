@@ -7,21 +7,48 @@ name = "g191-filter"
 version = "2026.11.3"
 description = "IIR/FIR filters according to Recommendation ITU-T G.191 (Software Tool Library). Provided at arbitrary sampling rates and in many formats"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
 authors = [
     { name = "Jan.Reimes", email = "jan.reimes@head-acoustics.com" }
 ]
+keywords = [
+    "ITU-T",
+    "G.191",
+    "speech processing",
+    "audio",
+    "DSP",
+    "FIR",
+    "IIR",
+    "resampling",
+]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Telecommunications Industry",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Rust",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+    "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "typer>=0.12.0",
     "numpy>=2.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/jr2804/g191-filter"
+Documentation = "https://jr2804.github.io/g191-filter/"
+Repository = "https://github.com/jr2804/g191-filter"
+Issues = "https://github.com/jr2804/g191-filter/issues"
+Changelog = "https://github.com/jr2804/g191-filter/releases"
 
 [dependency-groups]
 dev = [
@@ -33,7 +60,7 @@ dev = [
     "markdown-exec>=1.8",
     "markdown-callouts>=0.4",
     "ghp-import>=2.1",
-    "maturin>=1.5.0",
+    "maturin>=1.9.3",
     "mkdocs-mermaid2-plugin>=1.2",
     "xy>=0.0.7",
 ]
@@ -43,7 +70,7 @@ g191-filter = "g191_filter.cli.app:main"
 
 
 [build-system]
-requires = ["maturin>=1.5.0"]
+requires = ["maturin>=1.9.3"]
 build-backend = "maturin"
 
 [tool.maturin]

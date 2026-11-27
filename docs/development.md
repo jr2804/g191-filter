@@ -92,10 +92,41 @@ Vector response figures embedded in the documentation are dynamically plotted di
 uv run python scripts/gen_filter_figures.py
 ```
 
+### Packaging & PyPI Publication
+
+`release.yml` builds the source distribution and wheels, publishes them to PyPI
+with [trusted publishing](https://docs.pypi.org/trusted-publishers/), and creates
+the GitHub release. No PyPI API token is stored in the repository.
+
+The PyPI trusted publisher must use these settings:
+
+| Field | Value |
+| ----- | ----- |
+| PyPI project | `g191-filter` |
+| Owner | `jr2804` |
+| Repository | `g191-filter` |
+| Workflow | `release.yml` |
+| Environment | `pypi` |
+
+The matching GitHub environment is `pypi` (Settings → Environments); add required
+reviewers there if releases should wait for approval. The publish job requests
+`id-token: write` for OIDC. For the first upload, configure a pending trusted
+publisher on PyPI before pushing a release.
+
+To inspect the distributions locally:
+
+```bash
+uv build
+uvx twine check dist/*
+```
+
+The sdist is built from the Cargo package and excludes development-only trees via
+`package.exclude` in `Cargo.toml`.
+
 ### CI/CD Pipeline
 
 | Workflow | Trigger | Scope |
 | -------- | ------- | ----- |
-| **CI** (`ci.yml`) | Push / PR to `main` | Python matrix (3.13, 3.14) + Rust build + lint + test suite |
+| **CI** (`ci.yml`) | Push / PR to `main` | Python matrix (3.13, 3.14, 3.15-dev) + Rust build + lint + test suite |
 | **Docs** (`docs.yml`) | Push to `main` | Renders figures, builds static site, deploys to GitHub Pages |
-| **Release** (`release.yml`) | Tag `v*` | Wheel compilation and deployment |
+| **Release** (`release.yml`) | Push to `main` / manual dispatch | CalVer stamp, wheel + sdist builds, GitHub release, PyPI publication |

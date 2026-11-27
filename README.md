@@ -6,8 +6,9 @@
 <!-- markdownlint-disable MD033 -->
 <p align="center">
   <a href="#installation"><img alt="Python 3.13, 3.14, 3.14t" src="https://img.shields.io/badge/python-3.13%20%7C%203.14%20%7C%203.14t-3776ab?logo=python&logoColor=white"></a>
+  <a href="https://pypi.org/project/g191-filter/"><img alt="PyPI" src="https://img.shields.io/pypi/v/g191-filter"></a>
   <a href="https://github.com/jr2804/g191-filter/releases"><img alt="Free-threaded 3.14t" src="https://img.shields.io/badge/no--GIL-3.14t-30638b?logo=python&logoColor=white"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
+  <a href="https://github.com/jr2804/g191-filter/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green.svg"></a>
   <a href="https://github.com/jr2804/g191-filter/actions"><img alt="CI" src="https://github.com/jr2804/g191-filter/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 <!-- markdownlint-enable MD033 -->
@@ -41,23 +42,33 @@ This package provides:
 
 Requires **Python 3.13 or newer**. Prebuilt wheels need no Rust toolchain and cover
 CPython 3.13, 3.14 and 3.14t on Linux (x86_64, aarch64), macOS (arm64, x86_64) and
-Windows (x64) — 15 wheels per release, all attached to the
-[release page](https://github.com/jr2804/g191-filter/releases).
+Windows (x64). Wheels and the source distribution are published to
+[PyPI](https://pypi.org/project/g191-filter/).
 
 ```bash
-# Prebuilt wheel for your platform (adjust the tag and the platform tag)
-uv pip install "https://github.com/jr2804/g191-filter/releases/download/2026.9.13/g191_filter-2026.9.13-cp313-cp313-win_amd64.whl"
+# Install from PyPI
+uv add g191-filter
 
+# Or with pip
+pip install g191-filter
+
+# Run without installing
+uvx g191-filter --help
+```
+
+Installing from git compiles the Rust core through the `maturin` build backend, so
+those forms need a Rust toolchain:
+
+```bash
 # Add to a project, pinned to a release tag…
-uv add "git+https://github.com/jr2804/g191-filter.git@2026.9.13"
+uv add "git+https://github.com/jr2804/g191-filter.git@2026.11.3"
 
 # …or follow the tip of main
 uv add "git+https://github.com/jr2804/g191-filter.git"
 ```
 
-Installing from git compiles the Rust core through the `maturin` build backend, so those
-two forms need a Rust toolchain. The package is not published to PyPI — installs come
-from the release wheels or from git.
+Prebuilt wheels are also attached to every
+[release](https://github.com/jr2804/g191-filter/releases).
 
 ### Version reported by a git install
 
@@ -72,22 +83,25 @@ placeholder to work around for either case.
 
 ## Quick Usage
 
-Run without installing via `uvx` or `uv run`:
+Run without installing via `uvx` (PyPI), or directly from GitHub:
 
 ### Command-Line Interface (CLI)
 
 ```bash
-# Filter a WAV file using the IRS 8 kHz filter directly from GitHub
+# Filter a WAV file using the IRS 8 kHz filter
+uvx g191-filter filter irs8khz speech.wav --output-file speech_irs.wav
+
+# Or run the latest commit from GitHub (compiles the Rust core)
 uvx --from git+https://github.com/jr2804/g191-filter.git g191-filter filter \
   irs8khz speech.wav --output-file speech_irs.wav
 
 # Pin to a release tag so the wheel version matches the source you cloned:
-uvx --from "git+https://github.com/jr2804/g191-filter.git@2026.9.13" g191-filter filter \
+uvx --from "git+https://github.com/jr2804/g191-filter.git@2026.11.3" g191-filter filter \
   irs8khz speech.wav --output-file speech_irs.wav
 
 # Or inside a project environment with uv run:
-uv run --with git+https://github.com/jr2804/g191-filter.git g191-filter filter \
-  mod_irs16khz wideband.wav --output-file filtered.wav --block-size 4096
+uv run g191-filter filter mod_irs16khz wideband.wav \
+  --output-file filtered.wav --block-size 4096
 
 # Scan frequency response using the STL fltresp sine-power method:
 g191-filter freqresp flat1 --fs 16000 --f0 50 --ff 4000 --fstep 250
@@ -162,5 +176,5 @@ Bugs, questions and filter requests: [open an issue](https://github.com/jr2804/g
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/jr2804/g191-filter/blob/main/LICENSE) file for details.
 Coefficients and filter algorithms conform to Recommendation ITU-T G.191.

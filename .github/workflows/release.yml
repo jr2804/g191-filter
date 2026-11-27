@@ -112,6 +112,21 @@ jobs:
         uses: astral-sh/setup-uv@v10.4.0
       - name: Build sdist
         run: uv build --sdist
+      - name: Verify sdist contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(find dist -maxdepth 1 -name '*.tar.gz' -print -quit)"
+          listing="$RUNNER_TEMP/sdist-contents.txt"
+          tar tzf "$archive" > "$listing"
+          if grep -Eq '/(\.agents|\.beads|\.config|\.github|docs|scripts|tests)/' "$listing"; then
+            echo "sdist contains development-only files:" >&2
+            grep -E '/(\.agents|\.beads|\.config|\.github|docs|scripts|tests)/' "$listing" >&2
+            exit 1
+          fi
+          grep -q '/src/lib.rs' "$listing"
+          grep -q '/python/g191_filter/__init__.py' "$listing"
+          grep -q '/Cargo.lock' "$listing"
       - uses: actions/upload-artifact@v7
         with:
           name: sdist
@@ -167,7 +182,7 @@ jobs:
           # would be ambiguous here — it is kept for the container job below,
           # where all interpreters are present and discoverable. The two are
           # mutually exclusive in a single `maturin build` invocation.
-          args: --release -i ${{ steps.pys.outputs.python-path }}
+          args: --release --compatibility pypi -i ${{ steps.pys.outputs.python-path }}
           working-directory: .
 
       - name: Upload wheel
@@ -193,7 +208,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64
-          args: --release --find-interpreter
+          args: --release --compatibility pypi --find-interpreter
           working-directory: .
 
       - name: Upload wheels
@@ -201,6 +216,35 @@ jobs:
         with:
           name: wheels-linux-aarch64
           path: target/wheels/*.whl
+
+  # Trusted publishing: the PyPI trusted publisher must name this repository,
+  # release.yml and the `pypi` environment. No API token is stored in GitHub.
+  publish-pypi:
+    needs: [version, sdist, wheels, wheels-linux-aarch64]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/g191-filter
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Collect distributions
+        shell: bash
+        run: |
+          mkdir -p dist
+          find artifacts -type f \( -name '*.whl' -o -name '*.tar.gz' \) -exec cp {} dist/ \;
+          ls -la dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          skip-existing: true
 
   publish-release:
     needs: [version, sdist, wheels, wheels-linux-aarch64]

@@ -9,6 +9,29 @@ edition = "2021"
 license = "MIT"
 authors = ["Jan.Reimes <jan.reimes@head-acoustics.com>"]
 description = "Rust core for ITU-T G.191 FIR/IIR filters"
+repository = "https://github.com/jr2804/g191-filter"
+documentation = "https://jr2804.github.io/g191-filter/"
+readme = "README.md"
+# The PyPI sdist should contain only what is needed to build the package.
+# `cargo package` otherwise includes every tracked development file, which
+# would put `.beads` state and the docs/config trees into the published archive.
+exclude = [
+    "/.agents",
+    "/.beads",
+    "/.config",
+    "/.github",
+    "/.pre-commit-config.yaml",
+    "/.gitattributes",
+    "/.gitignore",
+    "/AGENTS.md",
+    "/docs",
+    "/opencode.jsonc",
+    "/ruff.toml",
+    "/scripts",
+    "/tests",
+    "/ty.toml",
+    "/zensical.toml",
+]
 
 [lib]
 # The lib name IS the Python module name. maturin builds wheels with the

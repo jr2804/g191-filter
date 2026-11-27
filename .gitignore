@@ -32,6 +32,7 @@ CLAUDE.md
 # MCP / coding assistant directories
 .vscode
 opencode.json
+opencode.jsonc
 .opencode
 
 # Skills lock file
@@ -62,6 +63,11 @@ nul
 *.log
 *.exe
 *.pyd
+*.so
+
+# lock files (Cargo.lock is tracked for reproducible builds)
+*.lock
+!Cargo.lock
 
 # mkdocs/zensical
 site/

@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+import argparse
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 STL_DIR = BASE_DIR / "tmp" / "_stl_extract"
@@ -98,7 +99,6 @@ def _copy_binaries(build_dir: Path, out_dir: Path) -> None:
 
 
 if __name__ == "__main__":
-    import argparse
 
     parser = argparse.ArgumentParser(description="Clone + build the ITU-T STL reference binaries")
     parser.add_argument("--stl-dir", type=Path, default=STL_DIR,

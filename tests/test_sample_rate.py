@@ -22,25 +22,6 @@ FS_NATIVE = 16000.0
 FS_OPERATIONAL = 48000.0
 
 
-def _impulse(length: int) -> np.ndarray:
-    x = np.zeros(length)
-    x[0] = 1.0
-    return x
-
-
-def _upper_3db_corner(y: np.ndarray, fs: float) -> float:
-    """Upper -3 dB band edge of an impulse response (exact for FIR).
-
-    The filters legitimately low-cut (rx_irs16khz DC is at -58 dB), so the
-    corner of interest is the upper band edge, not the first sub--3 dB bin.
-    """
-    spectrum = np.abs(np.fft.rfft(y))
-    freqs = np.fft.rfftfreq(len(y), d=1.0 / fs)
-    mag_db = 20 * np.log10(np.maximum(spectrum / spectrum.max(), 1e-12))
-    above = freqs[mag_db >= -3.0]
-    return float(above.max())
-
-
 @pytest.mark.parametrize(
     ("filter_id", "expected_corner"),
     [
@@ -106,13 +87,6 @@ def test_positive_rate_required() -> None:
         filter_array("rx_irs16khz", x, sample_rate=0.0)
 
 
-@pytest.fixture
-def impulse_wav_48k(tmp_path: Path) -> Path:
-    path = tmp_path / "impulse_48k.wav"
-    sf.write(path, _impulse(int(FS_OPERATIONAL)), int(FS_OPERATIONAL), subtype="FLOAT")
-    return path
-
-
 def test_auto_adapts_to_header_rate(impulse_wav_48k: Path, tmp_path: Path) -> None:
     """No sample_rate given: the header rate (48 kHz) is used and the
     16 kHz-design response is adapted to it.
@@ -142,6 +116,26 @@ def test_downconvert_to_16khz_still_available(impulse_wav_48k: Path, tmp_path: P
     assert abs(_upper_3db_corner(y, float(rate)) - 3617.0) < 15.0
 
 
+def _upper_3db_corner(y: np.ndarray, fs: float) -> float:
+    """Upper -3 dB band edge of an impulse response (exact for FIR).
+
+    The filters legitimately low-cut (rx_irs16khz DC is at -58 dB), so the
+    corner of interest is the upper band edge, not the first sub--3 dB bin.
+    """
+    spectrum = np.abs(np.fft.rfft(y))
+    freqs = np.fft.rfftfreq(len(y), d=1.0 / fs)
+    mag_db = 20 * np.log10(np.maximum(spectrum / spectrum.max(), 1e-12))
+    above = freqs[mag_db >= -3.0]
+    return float(above.max())
+
+
+@pytest.fixture
+def impulse_wav_48k(tmp_path: Path) -> Path:
+    path = tmp_path / "impulse_48k.wav"
+    sf.write(path, _impulse(int(FS_OPERATIONAL)), int(FS_OPERATIONAL), subtype="FLOAT")
+    return path
+
+
 def test_rate_converter_writes_true_output_rate(tmp_path: Path) -> None:
     """hq_down_2_to_1 on a 16 kHz file must write an 8 kHz header (previously
     the decimated data was mislabeled with the input rate).
@@ -153,6 +147,12 @@ def test_rate_converter_writes_true_output_rate(tmp_path: Path) -> None:
     y, rate = sf.read(out, dtype="float64")
     assert rate == 8000
     assert len(y) == int(FS_NATIVE) // 2
+
+
+def _impulse(length: int) -> np.ndarray:
+    x = np.zeros(length)
+    x[0] = 1.0
+    return x
 
 
 def test_design_rates_exposed() -> None:

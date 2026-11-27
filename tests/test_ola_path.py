@@ -39,15 +39,15 @@ SNAPSHOT_OFFSETS = [0, 1, 1024, 100000]
 OLA_FILTERS = [fid for fid in list_filters() if "ratio_num" not in dir() or get_filter_info(fid)["ratio_num"] == get_filter_info(fid)["ratio_den"]]
 # OLA-eligible 1:1 FIR filters (dwn_up == 1 AND length >= threshold)
 OLA_FILTERS = [
-    fid for fid in OLA_FILTERS
-    if get_filter_info(fid)["ratio_num"] == 1
-    and get_filter_info(fid)["ratio_den"] == 1
-    and get_filter_info(fid)["length"] >= OLA_THRESHOLD
+    fid
+    for fid in OLA_FILTERS
+    if get_filter_info(fid)["ratio_num"] == 1 and get_filter_info(fid)["ratio_den"] == 1 and get_filter_info(fid)["length"] >= OLA_THRESHOLD
 ]
 # Direct-path 1:1 FIR filters (small enough to stay on the direct path;
 # must remain bit-exact under any block_size sweep)
 DIRECT_FILTERS = [
-    fid for fid in list_filters()
+    fid
+    for fid in list_filters()
     if get_filter_info(fid)["ratio_num"] == 1
     and get_filter_info(fid)["ratio_den"] == 1
     and get_filter_info(fid)["length"] < OLA_THRESHOLD
@@ -55,19 +55,15 @@ DIRECT_FILTERS = [
 ]
 
 
-def _is_ola(fid: str) -> bool:
-    info = get_filter_info(fid)
-    return (
-        info["ratio_num"] == 1
-        and info["ratio_den"] == 1
-        and info["length"] >= OLA_THRESHOLD
-    )
-
-
 # `g712_8khz`, `stdpcm_16khz` (1:1 IIRs) return out=1 for in=N; `stdpcm_2_to_1`,
 # `iir_casc_lp_3_to_1` (rate-change IIRs) don't actually downsample. All
 # pre-existing, unrelated to OLA — skip.
 _LENGTH_BUGGED = {"g712_8khz", "stdpcm_16khz", "stdpcm_2_to_1", "iir_casc_lp_3_to_1"}
+
+
+def _is_ola(fid: str) -> bool:
+    info = get_filter_info(fid)
+    return info["ratio_num"] == 1 and info["ratio_den"] == 1 and info["length"] >= OLA_THRESHOLD
 
 
 @pytest.mark.parametrize("filter_id", list_filters())
@@ -119,9 +115,7 @@ def test_n_block_equals_one_block_direct(filter_id: str) -> None:
     for bs in BLOCK_SIZES:
         bw = BlockwiseFilter(filter_id, bs)
         many = np.asarray(bw.process_all(x))
-        np.testing.assert_array_equal(
-            one, many, err_msg=f"{filter_id} bs={bs}: blockwise output diverged"
-        )
+        np.testing.assert_array_equal(one, many, err_msg=f"{filter_id} bs={bs}: blockwise output diverged")
 
 
 @pytest.mark.parametrize("filter_id", OLA_FILTERS)
@@ -176,7 +170,7 @@ def test_ola_matches_numpy_direct_convolution(filter_id: str) -> None:
     # have +1.0.
     if filter_id in ("mod_irs16khz", "mod_irs48khz"):
         b = [-v for v in b]
-    y_ref = np.convolve(x, b)[:len(x)]
+    y_ref = np.convolve(x, b)[: len(x)]
     y_ola = np.asarray(filter_array(filter_id, x))
     max_diff = float(np.abs(y_ola - y_ref).max())
     # Both paths compute the same polynomial product; the OLA path's

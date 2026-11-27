@@ -18,7 +18,7 @@ app = typer.Typer(
 
 # Commands are plain functions in g191_filter.cli.commands; wiring them
 # here (after app exists) keeps the module free of circular imports, so
-# csort may freely reorder the imports section without breaking them.
+# pyreorder may freely reorder the imports section without breaking them.
 app.command()(commands.default)
 app.command()(commands.filter)
 app.command(name="freqresp")(commands.freqresp)

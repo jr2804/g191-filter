@@ -45,7 +45,7 @@ mise test
 
 ```bash
 mise lint       # Runs ruff, ty type-checker, and codespell
-mise format     # Runs ruff format and isort
+mise format     # Runs pyreorder, ruff format, and ruff isort fixes
 mise all        # Combined test, lint, and format verification
 ```
 

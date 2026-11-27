@@ -11,12 +11,12 @@ concurrency:
 
 jobs:
   version:
-    # Skip when the push was itself a release-version stamp — otherwise a
-    # stamp pushed with a PAT (rather than the auto GITHUB_TOKEN, for which
-    # GitHub suppresses downstream triggers) would loop forever.
+    # Skip release-version stamp commits to avoid loops, and honor an explicit
+    # [skip release] marker. CI and docs are separate workflows and still run.
     if: >-
       github.ref == 'refs/heads/main'
       && !contains(github.event.head_commit.message, 'chore(release): stamp')
+      && !contains(github.event.head_commit.message, '[skip release]')
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}

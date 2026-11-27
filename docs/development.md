@@ -121,7 +121,12 @@ uvx twine check dist/*
 ```
 
 The sdist is built from the Cargo package and excludes development-only trees via
-`package.exclude` in `Cargo.toml`.
+`[package] exclude` in `Cargo.toml`.
+
+To land a change without cutting a release, include `[skip release]` in the head
+commit message. The release workflow, including the PyPI upload, is skipped; CI
+and docs still run. The workflow's own `chore(release): stamp ...` commits are
+also skipped to prevent release loops.
 
 ### CI/CD Pipeline
 

@@ -54,11 +54,16 @@ def _cmake_configure(build_dir: Path) -> None:
     # without a native toolchain, e.g. Windows without MSVC).
     cc = shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
     compiler_args = [f"-DCMAKE_C_COMPILER={cc}"] if cc else ["-DCMAKE_C_COMPILER=zig;cc"]
+    # STL uses old-style `()` function declarations to mean "unspecified
+    # arguments". C23 reinterprets `()` as `(void)`, which GCC 15 defaults to,
+    # breaking calls such as `read_data(&offset, 1l, Fibs)`. Pin C17 until the
+    # upstream sources use proper prototypes.
     subprocess.run(  # noqa: S603
         [  # noqa: S607
             "cmake",
             "..",
             *compiler_args,
+            "-DCMAKE_C_STANDARD=17",
             "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
         ],
         cwd=str(build_dir),
